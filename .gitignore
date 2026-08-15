@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env
+coverage/
+tmp/
+data/d1-seed/
+npm-debug.log*

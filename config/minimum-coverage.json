@@ -1,0 +1,14 @@
+{
+  "recipes": 431,
+  "recipe_ingredient_occurrences": 4266,
+  "ingredients": 543,
+  "ingredients_with_nutrition": 431,
+  "nutrients": 21,
+  "retailers": 30,
+  "availability_evidence": 14756,
+  "substitution_rules": 52,
+  "ingredients_classified_for_substitution": 543,
+  "plant_products": 517,
+  "plant_product_offers": 558,
+  "sources": 15
+}

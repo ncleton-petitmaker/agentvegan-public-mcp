@@ -1,0 +1,70 @@
+{
+  "name": "@agentvegan/public-data-mcp",
+  "mcpName": "org.agentvegan/public-data",
+  "version": "1.0.0",
+  "description": "Serveur MCP, API et exports publics de la bibliothèque AgentVegan.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ncleton-petitmaker/agentvegan-public-mcp.git"
+  },
+  "homepage": "https://mcp.agentvegan.org/",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentvegan-public-data": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src/cli.js",
+    "dist/src/contracts.js",
+    "dist/src/errors.js",
+    "dist/src/mcp.js",
+    "dist/src/local.js",
+    "dist/src/repository-json.js",
+    "dist/src/service.js",
+    "dist/src/utils.js",
+    "data/catalog.json",
+    "data/manifest.json",
+    "server.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "data:sync": "node scripts/sync-public-data.mjs && npm run data:exports && npm run data:d1",
+    "data:exports": "node scripts/build-exports.mjs",
+    "data:d1": "node scripts/build-d1-seed.mjs",
+    "d1:import:local": "node scripts/import-d1.mjs --local",
+    "d1:import:remote": "node scripts/import-d1.mjs --remote",
+    "d1:verify:remote": "node scripts/verify-remote-d1.mjs",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:privacy": "node scripts/privacy-audit.mjs",
+    "test:exports": "node scripts/verify-exports.mjs",
+    "test:registry": "node scripts/verify-registry-metadata.mjs",
+    "test:mcp": "npm run build && node scripts/smoke-mcp.mjs",
+    "test": "npm run typecheck && npm run test:unit && npm run test:integration && npm run test:privacy && npm run test:exports && npm run test:registry && npm run test:mcp",
+    "dev": "wrangler dev",
+    "deploy:preflight": "node scripts/preflight-deploy.mjs",
+    "deploy": "npm run deploy:preflight && npm test && npm run d1:verify:remote && wrangler deploy",
+    "prepack": "npm run build && npm test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "agents": "0.20.1",
+    "hono": "4.13.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260811.1",
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/node": "22.19.19",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "wrangler": "4.123.0"
+  }
+}

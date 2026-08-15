@@ -1,0 +1,35 @@
+{
+  "name": "agentvegan",
+  "version": "1.0.0",
+  "description": "Recettes véganes, ingrédients, nutrition sourcée, substitutions et disponibilité en France.",
+  "author": {
+    "name": "AgentVegan",
+    "email": "support@agentvegan.org",
+    "url": "https://agentvegan.org/"
+  },
+  "homepage": "https://mcp.agentvegan.org/",
+  "repository": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
+  "license": "MIT",
+  "keywords": ["vegan", "recettes", "nutrition", "substitutions", "france"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AgentVegan",
+    "shortDescription": "Données véganes publiques et sourcées.",
+    "longDescription": "Explorez les recettes AgentVegan, les ingrédients canoniques, la nutrition sourcée, les substitutions culinaires et les preuves datées de disponibilité en France.",
+    "developerName": "AgentVegan",
+    "category": "Lifestyle",
+    "capabilities": ["Read", "MCP"],
+    "websiteURL": "https://mcp.agentvegan.org/",
+    "privacyPolicyURL": "https://mcp.agentvegan.org/privacy",
+    "termsOfServiceURL": "https://mcp.agentvegan.org/terms",
+    "defaultPrompt": [
+      "Où acheter du tahini ?",
+      "Par quoi remplacer un œuf dans des pancakes ?",
+      "Compare le tofu et le seitan sur 100 g."
+    ],
+    "brandColor": "#151815",
+    "composerIcon": "./assets/logo.svg",
+    "logo": "./assets/logo.svg"
+  },
+  "mcpServers": "./.mcp.json"
+}

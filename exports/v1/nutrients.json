@@ -1,0 +1,330 @@
+[
+  {
+    "id": "calcium_mg",
+    "label": "Calcium",
+    "unit": "mg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 950,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "dha_epa_mg",
+    "label": "DHA/EPA",
+    "unit": "mg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 250,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "energy_kcal",
+    "label": "Énergie",
+    "unit": "kcal",
+    "direction": null,
+    "recommendation": null,
+    "source_ids": []
+  },
+  {
+    "id": "iron_mg",
+    "label": "Fer",
+    "unit": "mg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 11,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "fiber_g",
+    "label": "Fibres",
+    "unit": "g",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 30,
+      "unit": "g/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "carbohydrates_g",
+    "label": "Glucides",
+    "unit": "g",
+    "direction": null,
+    "recommendation": null,
+    "source_ids": []
+  },
+  {
+    "id": "saturated_fat_energy_ratio",
+    "label": "Graisses saturées",
+    "unit": "% de l’énergie",
+    "direction": "max",
+    "recommendation": {
+      "basis": "daily",
+      "value": 12,
+      "unit": "% de l’énergie/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "saturated_fat_g",
+    "label": "Graisses saturées",
+    "unit": "g",
+    "direction": null,
+    "recommendation": null,
+    "source_ids": []
+  },
+  {
+    "id": "iodine_ug",
+    "label": "Iode",
+    "unit": "µg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 150,
+      "unit": "µg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "fat_g",
+    "label": "Lipides",
+    "unit": "g",
+    "direction": null,
+    "recommendation": null,
+    "source_ids": []
+  },
+  {
+    "id": "magnesium_mg",
+    "label": "Magnésium",
+    "unit": "mg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 380,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "omega3_ala_g",
+    "label": "Oméga-3 ALA",
+    "unit": "g",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 2,
+      "unit": "g/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "fat_energy_ratio",
+    "label": "Part des lipides",
+    "unit": "% de l’énergie",
+    "direction": "max",
+    "recommendation": {
+      "basis": "daily",
+      "value": 40,
+      "unit": "% de l’énergie/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "protein_g",
+    "label": "Protéines",
+    "unit": "g",
+    "direction": "min",
+    "recommendation": {
+      "basis": "body_weight",
+      "value": 0.83,
+      "unit": "g/kg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "salt_g",
+    "label": "Sel",
+    "unit": "g",
+    "direction": "max",
+    "recommendation": {
+      "basis": "daily",
+      "value": 5,
+      "unit": "g/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "selenium_ug",
+    "label": "Sélénium",
+    "unit": "µg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 70,
+      "unit": "µg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "sodium_mg",
+    "label": "Sodium",
+    "unit": "mg",
+    "direction": "max",
+    "recommendation": {
+      "basis": "daily",
+      "value": 2000,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "sugars_g",
+    "label": "Sucres",
+    "unit": "g",
+    "direction": null,
+    "recommendation": null,
+    "source_ids": []
+  },
+  {
+    "id": "vitamin_b12_ug",
+    "label": "Vitamine B12",
+    "unit": "µg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 4,
+      "unit": "µg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "vitamin_d_ug",
+    "label": "Vitamine D",
+    "unit": "µg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 15,
+      "unit": "µg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  },
+  {
+    "id": "zinc_mg",
+    "label": "Zinc",
+    "unit": "mg",
+    "direction": "min",
+    "recommendation": {
+      "basis": "daily",
+      "value": 14,
+      "unit": "mg/jour"
+    },
+    "source_ids": [
+      "recommendation:anses-proteines",
+      "recommendation:efsa-fibres",
+      "recommendation:anses-vitamines-mineraux",
+      "recommendation:anses-omega-3",
+      "recommendation:oms-sodium"
+    ]
+  }
+]

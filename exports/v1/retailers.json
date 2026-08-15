@@ -1,0 +1,310 @@
+[
+  {
+    "id": "amazon-fr",
+    "label": "Amazon.fr",
+    "category": "generaliste",
+    "service": "livraison",
+    "url": "https://www.amazon.fr/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "auchan",
+    "label": "Auchan",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.auchan.fr/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "biocoop",
+    "label": "Biocoop",
+    "category": "bio",
+    "service": "livraison ou retrait",
+    "url": "https://www.biocoop.fr/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "carrefour",
+    "label": "Carrefour",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.carrefour.fr/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "casino-proximite",
+    "label": "Casino proximité",
+    "category": "generaliste",
+    "service": "livraison ou retrait",
+    "url": "https://www.mescoursesdeproximite.com/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "chronodrive",
+    "label": "Chronodrive",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.chronodrive.com/",
+    "geographic_scope": "Selon la zone",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "u",
+    "label": "Courses U",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.coursesu.com/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "leclerc",
+    "label": "E.Leclerc",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.leclercdrive.fr/",
+    "geographic_scope": "Selon le Drive",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "ecomiam",
+    "label": "écomiam",
+    "category": "generaliste",
+    "service": "livraison ou retrait",
+    "url": "https://www.ecomiam.com/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "etiketbio",
+    "label": "Etiketbio",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://www.etiketbio.eu/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "franprix",
+    "label": "Franprix",
+    "category": "generaliste",
+    "service": "livraison par application",
+    "url": "https://www.franprix.fr/",
+    "geographic_scope": "Selon la zone desservie",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "greenweez",
+    "label": "Greenweez",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://www.greenweez.com/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": {
+      "app_store_id": "6451146423",
+      "bundle_id": "com.greenweez.app",
+      "url": "https://apps.apple.com/fr/app/greenweez-magasin-bio/id6451146423"
+    }
+  },
+  {
+    "id": "houra",
+    "label": "Houra",
+    "category": "generaliste",
+    "service": "livraison",
+    "url": "https://www.houra.fr/",
+    "geographic_scope": "Selon le code postal",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "intermarche",
+    "label": "Intermarché",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.intermarche.com/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "kazidomi",
+    "label": "Kazidomi",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://www.kazidomi.com/fr",
+    "geographic_scope": "France et Europe",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "koro",
+    "label": "KoRo",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://www.koro.fr/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "la-fourche",
+    "label": "La Fourche",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://lafourche.fr/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "la-vie-claire",
+    "label": "La Vie Claire",
+    "category": "bio",
+    "service": "livraison ou retrait",
+    "url": "https://www.lavieclaire.com/",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "marguerite-and-cow",
+    "label": "Marguerite & Cow",
+    "category": "specialiste_vegan",
+    "service": "livraison",
+    "url": "https://www.marguerite-and-cow.fr/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "public_product_catalog",
+    "ios_app": null
+  },
+  {
+    "id": "mon-epicerie-paris",
+    "label": "Mon Épicerie Paris",
+    "category": "specialiste_vegan",
+    "service": "livraison",
+    "url": "https://www.monepicerieparis.fr/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "public_product_catalog",
+    "ios_app": null
+  },
+  {
+    "id": "monoprix",
+    "label": "Monoprix",
+    "category": "generaliste",
+    "service": "livraison ou retrait",
+    "url": "https://courses.monoprix.fr/",
+    "geographic_scope": "Selon le code postal",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "nutri-beautiful",
+    "label": "Nutri-Beautiful",
+    "category": "vegan",
+    "service": "livraison",
+    "url": "https://nutri-beautiful.com/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "official-vegan-shop",
+    "label": "Official Vegan Shop",
+    "category": "vegan",
+    "service": "livraison",
+    "url": "https://www.officialveganshop.com/",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": {
+      "app_store_id": "1606954962",
+      "bundle_id": "com.officialveganshop.connect",
+      "url": "https://apps.apple.com/fr/app/official-vegan-shop/id1606954962"
+    }
+  },
+  {
+    "id": "picard",
+    "label": "Picard",
+    "category": "generaliste",
+    "service": "livraison ou retrait",
+    "url": "https://www.picard.fr/",
+    "geographic_scope": "Selon le code postal",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "piccantino",
+    "label": "Piccantino",
+    "category": "bio",
+    "service": "livraison",
+    "url": "https://www.piccantino.fr/vegan",
+    "geographic_scope": "France métropolitaine",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "picnic",
+    "label": "Picnic",
+    "category": "generaliste",
+    "service": "livraison par application",
+    "url": "https://picnic.app/fr/",
+    "geographic_scope": "Selon la zone",
+    "catalog_status": "evidence_imported",
+    "ios_app": null
+  },
+  {
+    "id": "supermarches-match",
+    "label": "Supermarchés Match",
+    "category": "generaliste",
+    "service": "drive ou livraison",
+    "url": "https://www.supermarchesmatch.fr/fr/boutique",
+    "geographic_scope": "Selon le magasin",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "thiriet",
+    "label": "Thiriet",
+    "category": "generaliste",
+    "service": "livraison ou retrait",
+    "url": "https://www.thiriet.com/",
+    "geographic_scope": "Selon le code postal",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "vegetal-food",
+    "label": "Vegetal Food",
+    "category": "vegan",
+    "service": "livraison",
+    "url": "https://www.vegetalfood.fr/",
+    "geographic_scope": "France et Europe",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  },
+  {
+    "id": "vegetal-square",
+    "label": "Vegetal Square",
+    "category": "vegan",
+    "service": "livraison",
+    "url": "https://vegetalsquare.com/",
+    "geographic_scope": "Selon le code postal",
+    "catalog_status": "not_connected",
+    "ios_app": null
+  }
+]

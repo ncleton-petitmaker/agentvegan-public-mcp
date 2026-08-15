@@ -1,0 +1,46 @@
+[
+  {
+    "id": "poulet-vegetal",
+    "label": "Poulet végétal"
+  },
+  {
+    "id": "jambon-et-charcuterie-vegetale",
+    "label": "Jambon et charcuterie végétale"
+  },
+  {
+    "id": "saucisses-et-merguez-vegetales",
+    "label": "Saucisses, chipolatas et merguez végétales"
+  },
+  {
+    "id": "steaks-et-burgers-vegetaux",
+    "label": "Steaks, hachés et burgers végétaux"
+  },
+  {
+    "id": "boulettes-et-eminces-vegetaux",
+    "label": "Boulettes, émincés et effilochés végétaux"
+  },
+  {
+    "id": "proteines-vegetales-texturees",
+    "label": "Protéines végétales texturées"
+  },
+  {
+    "id": "poisson-et-fruits-de-mer-vegetaux",
+    "label": "Poisson et fruits de mer végétaux"
+  },
+  {
+    "id": "tofu-tempeh-et-seitan",
+    "label": "Tofu, tempeh et seitan"
+  },
+  {
+    "id": "fromages-vegetaux",
+    "label": "Fromages végétaux"
+  },
+  {
+    "id": "cremes-et-yaourts-vegetaux",
+    "label": "Crèmes et yaourts végétaux"
+  },
+  {
+    "id": "alternatives-a-l-oeuf",
+    "label": "Alternatives à l’œuf"
+  }
+]

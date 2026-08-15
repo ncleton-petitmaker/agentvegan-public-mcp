@@ -1,0 +1,124 @@
+[
+  {
+    "id": "composition:ciqual",
+    "kind": "composition",
+    "label": "Anses — Table de composition Ciqual 2025",
+    "url": "https://doi.org/10.57745/RDMHWY",
+    "license": "Licence Ouverte / Etalab 2.0",
+    "fingerprint": "md5:0d9758ce23f3f13dd63a005bc1bb4f2c"
+  },
+  {
+    "id": "composition:fdc_sr_legacy",
+    "kind": "composition",
+    "label": "USDA — FoodData Central, collection historique 2018",
+    "url": "https://fdc.nal.usda.gov/download-datasets/",
+    "license": "CC0 1.0 / public domain",
+    "fingerprint": "sha256:b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0"
+  },
+  {
+    "id": "composition:fdc_foundation",
+    "kind": "composition",
+    "label": "USDA — FoodData Central, aliments de référence 2026",
+    "url": "https://fdc.nal.usda.gov/download-datasets/",
+    "license": "CC0 1.0 / public domain",
+    "fingerprint": "sha256:d6d4f41dcd19a46abcdd67775379cb6f0292ff08daa7e0680fdd0982830bf57b"
+  },
+  {
+    "id": "composition:fao_density",
+    "kind": "composition",
+    "label": "FAO/INFOODS — Base des densités alimentaires",
+    "url": "https://www.fao.org/food-composition/tables-and-databases/",
+    "fingerprint": "sha256:329caaecbaa2031a73dd50c32e0cee8453d85655342829d80a3cd92053854227"
+  },
+  {
+    "id": "composition:norway_2026",
+    "kind": "composition",
+    "label": "Autorité norvégienne — Table de composition 2026",
+    "url": "https://www.matvaretabellen.no/en/api/",
+    "license": "Open data; attribution required",
+    "fingerprint": "foods_sha256:16d67b137c24752dc785e8821beb7d701566c4ca8e837b83f6cede69ea42e4fe · nutrients_sha256:15a95f0ebd0682daa293685203dad9aaa28b07df4e9b943ca03269161fbefd91 · sources_sha256:71917dadc84a5218bb3a78327cda6945c48eb6b2e72e4ee7fbf0c23ab7f6778d"
+  },
+  {
+    "id": "composition:afcd_release_3",
+    "kind": "composition",
+    "label": "FSANZ — Base australienne de composition, version 3",
+    "url": "https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd/data-files",
+    "license": "FSANZ AFCD licence based on CC BY-SA 3.0 Australia",
+    "fingerprint": "food_details_sha256:69aa096c45cb0699db60a9c544442312e9ff09af587b99c42dc78bc26f689629 · nutrient_profiles_sha256:14cb3e73dbf58987b440e6299624c0fefd7a4e61591fc1f753995d9534e0efc9 · nutrient_details_sha256:7c455129a90e65d29840ecd188fa223cca8bdf0729b21efebc286884d69fafaa"
+  },
+  {
+    "id": "recommendation:anses-proteines",
+    "label": "Anses — Référence nutritionnelle en protéines",
+    "url": "https://www.anses.fr/fr/content/les-proteines",
+    "kind": "recommendation"
+  },
+  {
+    "id": "recommendation:anses-fibres",
+    "label": "Anses — Repère quotidien en fibres",
+    "url": "https://www.anses.fr/fr/content/inca-3-evolution-des-habitudes-et-modes-de-consommation-de-nouveaux-enjeux-en-matiere-de",
+    "kind": "recommendation"
+  },
+  {
+    "id": "recommendation:efsa-fibres",
+    "label": "EFSA — Valeur nutritionnelle de référence pour les fibres",
+    "url": "https://www.efsa.europa.eu/fr/press/news/nda100326",
+    "kind": "recommendation"
+  },
+  {
+    "id": "recommendation:anses-vitamines-mineraux",
+    "label": "Anses — Références en vitamines et minéraux",
+    "url": "https://www.anses.fr/fr/content/les-references-nutritionnelles-en-vitamines-et-mineraux",
+    "kind": "recommendation"
+  },
+  {
+    "id": "recommendation:anses-omega-3",
+    "label": "Anses — Références pour les oméga-3",
+    "url": "https://www.anses.fr/fr/content/les-acides-gras-omega-3",
+    "kind": "recommendation"
+  },
+  {
+    "id": "recommendation:oms-sodium",
+    "label": "OMS — Recommandation sur le sodium",
+    "url": "https://www.who.int/fr/news-room/fact-sheets/detail/sodium-reduction",
+    "kind": "recommendation"
+  },
+  {
+    "id": "source:agentvegan-public-recipes",
+    "kind": "catalogue",
+    "label": "AgentVegan — bibliothèque publique de recettes",
+    "url": "https://agentvegan.org/",
+    "license": null,
+    "reuse_note": "Les droits éditoriaux des recettes restent distincts des licences des données nutritionnelles."
+  },
+  {
+    "id": "source:agentvegan-public-marketplace",
+    "kind": "disponibilite",
+    "label": "AgentVegan — preuves publiques de disponibilité",
+    "url": "https://agentvegan.org/magasins",
+    "license": null,
+    "reuse_note": "Les marques, fiches et images restent soumises aux droits de leurs titulaires."
+  },
+  {
+    "id": "source:agentvegan-public-availability-variants",
+    "kind": "substitution",
+    "label": "AgentVegan — variantes culinaires publiques validées",
+    "url": "https://agentvegan.org/",
+    "license": null
+  },
+  {
+    "id": "substitution:usu-flax-egg",
+    "kind": "substitution_culinaire",
+    "label": "Utah State University Extension — Create a Quick Bread",
+    "url": "https://extension.usu.edu/createbetterhealth/blog/createaquickbread",
+    "license": null,
+    "reuse_note": "La conversion est synthétisée et attribuée ; le contenu éditorial de la source n’est pas reproduit."
+  },
+  {
+    "id": "substitution:king-arthur-flax-egg",
+    "kind": "substitution_culinaire",
+    "label": "King Arthur Baking — Guide des substituts d’œuf",
+    "url": "https://www.kingarthurbaking.com/blog/2021/01/21/guide-for-substituting-eggs-best-egg-replacers",
+    "license": null,
+    "reuse_note": "La conversion, les usages et les limites sont synthétisés et attribués ; le contenu éditorial de la source n’est pas reproduit."
+  }
+]
