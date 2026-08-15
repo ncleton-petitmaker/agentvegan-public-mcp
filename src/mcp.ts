@@ -81,7 +81,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.11",
+    version: "2.0.12",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",

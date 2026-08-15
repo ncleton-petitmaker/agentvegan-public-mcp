@@ -35,6 +35,22 @@ describe("PublicDataService", () => {
     expect((response.data as unknown[]).length).toBeGreaterThan(0);
   });
 
+  it("conserve les minimums nutritionnels sans bandeau global redondant", async () => {
+    const search = await service.searchRecipes({ limit: 50 });
+    const recipes = search.data as Array<{ id: string }>;
+    let detail: PublicResponse | null = null;
+    for (const recipe of recipes) {
+      const candidate = await service.getRecipe(recipe.id);
+      const scores = (candidate.data as { nutrition?: { priority_scores?: Array<{ status?: string }> } }).nutrition?.priority_scores ?? [];
+      if (scores.some((score) => score.status === "sourced_lower_bound")) {
+        detail = candidate;
+        break;
+      }
+    }
+    expect(detail).not.toBeNull();
+    expect(detail?.coverage_warnings).toEqual([]);
+  });
+
   it("pagine avec un curseur lié à la version", async () => {
     const first = await service.searchRecipes({ limit: 2 });
     expect(first.next_cursor).toEqual(expect.any(String));

@@ -107,12 +107,12 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v13.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v14.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Mode Yuka");
-      const substituteUi = await client.readResource({ uri: "ui://agentvegan/substitute-explorer/v13.html" });
+      const substituteUi = await client.readResource({ uri: "ui://agentvegan/substitute-explorer/v14.html" });
       expect(substituteUi.contents[0]).toMatchObject({ mimeType: "text/html;profile=mcp-app" });
     } finally {
       await client.close();

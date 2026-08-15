@@ -262,10 +262,7 @@ export class PublicDataService {
     const recipe = await this.repository.getRecipe(id);
     if (!recipe) throw new PublicDataError("NOT_FOUND", `Recette introuvable : ${id}.`, 404);
     const publicRecipe = recipeWithPublicMedia(recipe);
-    const warnings = (publicRecipe.nutrition?.priority_scores as Array<Record<string, unknown>> | undefined)?.some((item) => item.status === "sourced_lower_bound")
-      ? ["Certaines valeurs nutritionnelles sont des minimums sourcés et restent explicitement marquées comme telles."]
-      : [];
-    return this.envelope(publicRecipe, null, warnings, [SOURCE_RECIPES]);
+    return this.envelope(publicRecipe, null, [], [SOURCE_RECIPES]);
   }
 
   async searchIngredients(input: { query?: string | undefined; limit?: number | undefined; cursor?: string | undefined }): Promise<PublicResponse> {

@@ -1,6 +1,7 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import { z } from "zod";
 import "./styles.css";
+import { shouldReplayHostToolOutput } from "../../src/mcp-app-state.js";
 import { canonicalLocale } from "./locale";
 import { toolResultPayloadCandidates } from "./tool-result";
 
@@ -279,7 +280,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.11" },
+  { name: "Agent Vegan", version: "2.0.12" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -1312,7 +1313,9 @@ app.addEventListener("toolresult", (result) => {
 app.addEventListener("hostcontextchanged", applyHostContext);
 window.addEventListener("openai:set_globals", (event) => {
   const globals = (event as CustomEvent<{ globals?: OpenAiExtensions }>).detail?.globals;
-  if (globals?.toolOutput !== undefined) replayChatGptToolOutput(globals.toolOutput);
+  if (shouldReplayHostToolOutput(currentEnvelope !== null, globals?.toolOutput)) {
+    replayChatGptToolOutput(globals?.toolOutput);
+  }
 });
 app.onteardown = async () => {
   if (activeTimer !== null) window.clearInterval(activeTimer);
