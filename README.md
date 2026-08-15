@@ -9,17 +9,27 @@ Service public, gratuit pour l’utilisateur, sans compte et en lecture seule po
 - OpenAPI : `https://mcp.agentvegan.org/openapi.json`
 - Exports : `https://mcp.agentvegan.org/exports/v1/manifest.json`
 
+Le même endpoint fournit aussi des interfaces [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) : carrousels d’images, fiches recettes illustrées, produits végétaux, magasins, substitutions et comparaisons nutritionnelles. Un client sans support MCP Apps continue de recevoir les réponses texte et `structuredContent` complètes.
+
 Le code est sous licence MIT. Les données conservent leurs droits et licences source par source ; il n’existe aucune licence globale appliquée aux recettes, marques, fiches commerciales ou images.
 
 ## Installer
 
 ### Claude
 
-Une fois le Worker public déployé, ajoutez dans les réglages de connecteurs l’URL `https://mcp.agentvegan.org/mcp`. Aucun OAuth ni clé API n’est demandé.
+Ajoutez dans les réglages de connecteurs l’URL `https://mcp.agentvegan.org/mcp`. Aucun OAuth ni clé API n’est demandé. Les clients Claude compatibles MCP Apps rendent les cartes et vues plein écran ; les autres conservent le résultat structuré.
 
 ### ChatGPT
 
-Le plugin MCP-only AgentVegan est prêt pour la soumission au répertoire OpenAI. Une URL MCP personnalisée ne suffit pas à garantir l’usage sur ChatGPT Free. La mention « compatible ChatGPT Free sur le web en France » reste interdite tant que l’app n’a pas été approuvée puis testée sur un compte Free vierge.
+Le plugin AgentVegan utilise le bridge MCP Apps standard, également implémenté par ChatGPT. Les extensions `window.openai` restent optionnelles et détectées par capacité. Une URL MCP personnalisée ne suffit pas à garantir l’usage sur ChatGPT Free : la mention « compatible ChatGPT Free sur le web en France » reste interdite tant que l’app n’a pas été approuvée puis testée sur un compte Free vierge.
+
+Parcours visuels disponibles :
+
+- galerie paginée de 3 à 8 recettes avec photos ;
+- fiche recette avec image principale, ingrédients, nutrition et étapes illustrées ;
+- galerie de produits avec disponibilité et date de vérification ;
+- comparaison nutritionnelle interactive sur `100_g`, `portion` ou `recette` ;
+- fiche ingrédient avec recettes associées, magasins et substitutions.
 
 ### Développeurs et clients MCP locaux
 
@@ -69,7 +79,14 @@ npm run data:sync
 npm test
 ```
 
-Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils sont annotés lecture seule, non destructifs et idempotents.
+Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils de données et les cinq outils de rendu sont annotés lecture seule, non destructifs et idempotents. Les cinq ressources `ui://agentvegan/.../v1.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt.
+
+Le bundle UI est produit en fichier unique et embarqué dans le serveur :
+
+```bash
+npm run build:ui
+npm test
+```
 
 ## Déploiement atomique
 

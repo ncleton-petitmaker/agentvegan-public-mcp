@@ -36,6 +36,7 @@ function recipeSummary(recipe: Recipe): JsonObject {
     meal: recipe.meal ?? null,
     prep_minutes: recipe.prep_minutes ?? null,
     servings: recipe.servings ?? null,
+    image_url: recipe.image_url ?? null,
     url: recipe.url,
     ingredients: recipe.ingredients.map((item) => ({
       ingredient_id: item.ingredient_id,

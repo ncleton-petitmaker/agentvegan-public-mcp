@@ -35,12 +35,15 @@ export interface PublicManifest extends JsonObject {
 export interface Recipe extends JsonObject {
   id: string;
   slug: string;
+  url?: string | null;
   title: string;
   subtitle?: string | null;
   meal?: string | null;
   prep_minutes?: number | null;
   servings?: string | null;
+  image_url?: string | null;
   ingredients: RecipeIngredient[];
+  guide?: JsonObject | null;
   nutrition?: JsonObject;
 }
 
@@ -104,6 +107,8 @@ export interface PlantProduct extends JsonObject {
   name: string;
   brand?: string | null;
   category_id?: string | null;
+  image_url?: string | null;
+  last_seen_at?: string | null;
   offers: JsonObject[];
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "agentvegan",
-  "version": "1.0.0",
-  "description": "Recettes véganes, ingrédients, nutrition sourcée, substitutions et disponibilité en France.",
+  "version": "1.1.0",
+  "description": "Recettes véganes illustrées, ingrédients, nutrition sourcée, substitutions et disponibilité en France.",
   "author": {
     "name": "AgentVegan",
     "email": "support@agentvegan.org",
@@ -15,7 +15,7 @@
   "interface": {
     "displayName": "AgentVegan",
     "shortDescription": "Données véganes publiques et sourcées.",
-    "longDescription": "Explorez les recettes AgentVegan, les ingrédients canoniques, la nutrition sourcée, les substitutions culinaires et les preuves datées de disponibilité en France.",
+    "longDescription": "Explorez dans une interface interactive les recettes AgentVegan illustrées, les ingrédients canoniques, la nutrition sourcée, les substitutions culinaires, les produits végétaux et les preuves datées de disponibilité en France.",
     "developerName": "AgentVegan",
     "category": "Lifestyle",
     "capabilities": ["Read", "MCP"],

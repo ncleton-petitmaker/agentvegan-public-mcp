@@ -2,7 +2,16 @@ import { McpServer, ResourceTemplate, type CallToolResult, type ReadResourceResu
 import { z } from "zod";
 import { errorPayload } from "./errors.js";
 import { PublicDataService } from "./service.js";
-import type { PublicEntity } from "./contracts.js";
+import type { JsonObject, PublicEntity, PublicResponse, SourceReference } from "./contracts.js";
+import {
+  MCP_APP_URIS,
+  nutritionComparisonForUi,
+  productCardForUi,
+  recipeCardForUi,
+  recipeDetailForUi,
+  registerAgentVeganMcpAppResources,
+  viewEnvelope,
+} from "./mcp-apps.js";
 
 const annotations = {
   readOnlyHint: true,
@@ -15,6 +24,50 @@ const pagination = {
   limit: z.number().int().min(1).max(50).optional().describe("Nombre maximal de résultats (1 à 50, 20 par défaut)."),
   cursor: z.string().optional().describe("Curseur opaque renvoyé par l’appel précédent."),
 };
+
+const recipeSearchContext = z.object({
+  query: z.string().min(1).optional(),
+  ingredients: z.array(z.string().min(1)).max(10).optional(),
+  meal: z.string().min(1).optional(),
+  max_time_minutes: z.number().nonnegative().optional(),
+  nutrient: z.string().min(1).optional(),
+  nutrient_minimum: z.number().nonnegative().optional(),
+}).optional();
+
+const productSearchContext = z.object({
+  query: z.string().min(1).optional(),
+  brand: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
+  retailer: z.string().min(1).optional(),
+  in_stock_only: z.boolean().optional(),
+}).optional();
+
+function uiMeta(resourceUri: string, invoking: string, invoked: string): Record<string, unknown> {
+  return {
+    ui: { resourceUri },
+    "openai/outputTemplate": resourceUri,
+    "openai/toolInvocation/invoking": invoking,
+    "openai/toolInvocation/invoked": invoked,
+  };
+}
+
+function mergeResponses(responses: PublicResponse[]): PublicResponse {
+  const first = responses[0];
+  if (!first) throw new Error("Aucune réponse publique à afficher.");
+  if (responses.some((response) => response.dataset_version !== first.dataset_version)) {
+    throw new Error("Les éléments demandés ne proviennent pas de la même version du catalogue.");
+  }
+  const sourceById = new Map<string, SourceReference>();
+  for (const response of responses) for (const source of response.sources) sourceById.set(source.id, source);
+  return {
+    dataset_version: first.dataset_version,
+    data: first.data,
+    next_cursor: null,
+    sources: [...sourceById.values()],
+    coverage_warnings: [...new Set(responses.flatMap((response) => response.coverage_warnings))],
+    checked_at: first.checked_at,
+  };
+}
 
 async function call(operation: () => Promise<Record<string, unknown>>): Promise<CallToolResult> {
   try {
@@ -46,7 +99,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "AgentVegan Public Data",
-    version: "1.0.0",
+    version: "1.1.0",
     title: "AgentVegan",
     description: "Recettes véganes françaises, ingrédients, nutrition sourcée, substitutions, enseignes et produits végétaux publics.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -143,6 +196,86 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     inputSchema: z.object({}),
   }, () => call(() => service.getCatalogStatus() as Promise<Record<string, unknown>>));
 
+  server.registerTool("render_recipe_gallery", {
+    title: "Afficher une galerie de recettes",
+    description: "Affiche 3 à 8 recettes déjà sélectionnées dans un carrousel illustré et paginé. Appelez d’abord search_recipes, puis transmettez ses identifiants, son contexte de recherche et son next_cursor.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.recipeGallery, "Préparation de la galerie…", "Galerie prête"),
+    inputSchema: z.object({
+      recipe_ids: z.array(z.string().min(1)).min(3).max(8).describe("Identifiants issus de search_recipes, dans l’ordre d’affichage."),
+      search: recipeSearchContext.describe("Filtres réutilisés par la pagination interactive."),
+      next_cursor: z.string().nullable().optional().describe("Curseur renvoyé par search_recipes pour la page suivante."),
+    }),
+  }, (input) => call(async () => {
+    const responses = await Promise.all(input.recipe_ids.map((id) => service.getRecipe(id)));
+    const merged = mergeResponses(responses);
+    const items = responses.map((response) => recipeCardForUi(response.data));
+    return viewEnvelope(merged, {
+      view: "recipe_gallery",
+      items,
+      search: (input.search ?? {}) as JsonObject,
+      next_cursor: input.next_cursor ?? null,
+    }, input.next_cursor ?? null);
+  }));
+
+  server.registerTool("render_recipe_detail", {
+    title: "Afficher une recette illustrée",
+    description: "Affiche une recette complète avec image principale, ingrédients, nutrition et étapes illustrées. Utilisez l’identifiant stable retourné par search_recipes ou get_recipe.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.recipeDetail, "Préparation de la recette…", "Recette prête"),
+    inputSchema: z.object({ recipe_id: z.string().min(1) }),
+  }, ({ recipe_id }) => call(async () => {
+    const response = await service.getRecipe(recipe_id);
+    return viewEnvelope(response, { view: "recipe_detail", recipe: recipeDetailForUi(response.data) });
+  }));
+
+  server.registerTool("render_plant_product_gallery", {
+    title: "Afficher une galerie de produits végétaux",
+    description: "Affiche 3 à 8 produits déjà sélectionnés avec leurs images et leurs offres datées. Appelez d’abord search_plant_products, puis transmettez ses identifiants, ses filtres et son next_cursor.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.plantProductGallery, "Préparation des produits…", "Galerie produits prête"),
+    inputSchema: z.object({
+      product_ids: z.array(z.string().min(1)).min(3).max(8),
+      search: productSearchContext.describe("Filtres réutilisés par la pagination interactive."),
+      next_cursor: z.string().nullable().optional(),
+    }),
+  }, (input) => call(async () => {
+    const responses = await Promise.all(input.product_ids.map((id) => service.getEntityRecord("plant-product", id)));
+    const merged = mergeResponses(responses);
+    const items = responses.map((response) => productCardForUi(response.data));
+    return viewEnvelope(merged, {
+      view: "plant_product_gallery",
+      items,
+      search: (input.search ?? {}) as JsonObject,
+      next_cursor: input.next_cursor ?? null,
+    }, input.next_cursor ?? null);
+  }));
+
+  server.registerTool("render_nutrition_comparison", {
+    title: "Afficher une comparaison nutritionnelle",
+    description: "Affiche de manière interactive une comparaison déjà demandée sur une base explicite. Appelez d’abord compare_nutrition avec les mêmes entités et la même base.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.nutritionComparison, "Préparation de la comparaison…", "Comparaison prête"),
+    inputSchema: z.object({
+      entities: z.array(z.string().min(1)).min(2).max(10),
+      basis: z.enum(["100_g", "portion", "recette"]),
+    }),
+  }, (input) => call(async () => {
+    const response = await service.compareNutrition(input);
+    return viewEnvelope(response, nutritionComparisonForUi(response.data));
+  }));
+
+  server.registerTool("render_ingredient_explorer", {
+    title: "Afficher une fiche ingrédient interactive",
+    description: "Affiche un ingrédient canonique avec ses recettes illustrées, ses preuves magasins datées et ses substitutions culinaires validées.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.ingredientExplorer, "Préparation de l’ingrédient…", "Fiche ingrédient prête"),
+    inputSchema: z.object({ ingredient: z.string().min(1) }),
+  }, ({ ingredient }) => call(async () => {
+    const response = await service.getIngredient(ingredient);
+    return viewEnvelope(response, { view: "ingredient_explorer", ingredient: response.data });
+  }));
+
   server.registerResource("catalog-manifest", "agentvegan://catalog/manifest", {
     title: "Manifeste du catalogue public AgentVegan",
     description: "Version, empreintes, compteurs, couverture, sources et avertissements.",
@@ -170,6 +303,8 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     mimeType: "application/json",
     cacheHint: { ttlMs: 3_600_000, cacheScope: "public" },
   }, (uri, variables) => resource(uri, () => service.getEntityRecord(String(variables.entity) as PublicEntity, String(variables.id)) as Promise<Record<string, unknown>>));
+
+  registerAgentVeganMcpAppResources(server);
 
   return server;
 }
