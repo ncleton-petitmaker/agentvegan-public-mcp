@@ -57,7 +57,7 @@ async function rateLimit(request: Request, env: Env): Promise<void> {
 const documentation = `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgentVegan — données publiques</title><style>body{font:17px/1.55 system-ui,sans-serif;max-width:850px;margin:0 auto;padding:48px 24px;color:#17351f;background:#fbfff9}h1,h2{line-height:1.15}code{background:#eaf5e8;padding:.15rem .35rem;border-radius:.3rem}a{color:#176b36}.card{border:1px solid #cfe4cf;border-radius:14px;padding:20px;margin:20px 0}</style></head><body><h1>AgentVegan Public Data</h1><p>Un accès gratuit, public et sans compte aux recettes véganes, ingrédients canoniques, données nutritionnelles sourcées, substitutions culinaires, enseignes et produits végétaux.</p><p>Les clients compatibles MCP Apps affichent aussi des galeries d’images, fiches recettes illustrées et comparaisons interactives. Les réponses texte et structurées restent disponibles partout.</p><div class="card"><h2>ChatGPT</h2><p>L’app publique AgentVegan sera installable depuis le répertoire OpenAI après approbation. La compatibilité ChatGPT Free ne sera annoncée qu’après un test réel en France.</p></div><div class="card"><h2>Claude</h2><p>Ajoutez le connecteur MCP distant <code>https://mcp.agentvegan.org/mcp</code>.</p></div><div class="card"><h2>Développeurs</h2><p><a href="/openapi.json">OpenAPI</a> · <a href="/exports/v1/manifest.json">Exports versionnés</a> · <a href="/server.json">Registre MCP</a></p></div><p><a href="/privacy">Confidentialité</a> · <a href="/terms">Conditions et licences</a> · <a href="/support">Aide</a></p></body></html>`;
 
-const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="28" fill="#176b36"/><path d="M28 76c31-3 50-22 65-48 9 29 2 60-27 70-16 6-31 0-38-22Z" fill="#dff6ca"/><path d="M35 91c17-22 34-35 55-48" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg>`;
+const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#151815"/><circle cx="32" cy="32" r="20" fill="#bdff00"/><path d="M32 18c8 5 12 12 12 21a13 13 0 0 1-24 0c0-9 4-16 12-21Z" fill="#f8f8f4"/><path d="M32 21c5 5 7 10 7 17a8 8 0 0 1-14 0c0-7 2-12 7-17Z" fill="#151815"/></svg>`;
 
 export function createApp(): Hono<{ Bindings: Env }> {
   const app = new Hono<{ Bindings: Env }>();
@@ -161,6 +161,17 @@ export function createApp(): Hono<{ Bindings: Env }> {
   app.get("/", (c) => c.html(documentation));
   app.get("/openapi.json", (c) => c.json(openApiDocument));
   app.get("/logo.svg", (c) => c.body(logoSvg, 200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" }));
+  app.get("/logo.png", async (c) => {
+    if (!c.env.EXPORTS) throw new PublicDataError("DATASET_UNAVAILABLE", "La liaison statique EXPORTS est absente pour le logo Agent Vegan.", 503);
+    const logoUrl = new URL(c.req.url);
+    logoUrl.pathname = "/logo.png";
+    const response = await c.env.EXPORTS.fetch(new Request(logoUrl));
+    if (!response.ok) throw new PublicDataError("DATASET_UNAVAILABLE", "Le logo PNG public Agent Vegan est absent du déploiement.", 503);
+    const headers = new Headers(response.headers);
+    headers.set("Content-Type", "image/png");
+    headers.set("Cache-Control", "public, max-age=86400");
+    return new Response(response.body, { status: 200, headers });
+  });
   app.get("/privacy", (c) => c.html("<html lang=\"fr\"><meta charset=\"utf-8\"><title>Confidentialité — AgentVegan</title><h1>Confidentialité</h1><p>Le service est public et sans compte. Il ne conserve ni prompts complets, ni contenu des réponses, ni données personnelles. Les journaux techniques contiennent uniquement route générique, statut, latence, erreurs agrégées, volumes et âge du catalogue. Cloudflare traite les requêtes pour fournir et protéger le service.</p><p>Contact : support@agentvegan.org</p>"));
   app.get("/terms", (c) => c.html("<html lang=\"fr\"><meta charset=\"utf-8\"><title>Conditions — AgentVegan</title><h1>Conditions et licences</h1><p>Le code est publié sous licence MIT. Les données gardent leurs licences par source : Ciqual sous Licence Ouverte / Etalab 2.0, USDA FoodData Central sous CC0. Les recettes, marques, fiches commerciales et images ne reçoivent aucune licence globale ; consultez le manifeste pour chaque provenance. Les disponibilités sont des observations datées, pas des garanties de stock. Les informations nutritionnelles ne remplacent pas un avis médical.</p>"));
   app.get("/support", (c) => c.html("<html lang=\"fr\"><meta charset=\"utf-8\"><title>Aide — AgentVegan</title><h1>Aide AgentVegan Public Data</h1><p>Documentation : <a href=\"/openapi.json\">OpenAPI</a>. État : <a href=\"/api/v1/status\">catalogue</a>. Contact : support@agentvegan.org.</p>"));

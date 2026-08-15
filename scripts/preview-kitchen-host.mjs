@@ -22,18 +22,19 @@ const hostHtml = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AgentVegan Kitchen · hôte de validation</title>
+  <title>Agent Vegan · hôte de validation</title>
   <style>
     *{box-sizing:border-box}body{margin:0;background:#e7f1e4;color:#102415;font-family:Inter,ui-sans-serif,system-ui,sans-serif}.host{max-width:1440px;margin:auto;padding:18px}.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.bar strong{font-size:15px}.status{border-radius:999px;background:#d8f4c7;color:#15582e;padding:7px 11px;font-size:12px;font-weight:750}.frame{display:block;width:100%;height:820px;border:1px solid #bad2b8;border-radius:20px;background:#fff;box-shadow:0 20px 65px #183f2524}.frame.fullscreen{position:fixed;z-index:20;inset:0;width:100vw;height:100vh;border:0;border-radius:0}.hint{color:#4f6653;font-size:12px}
   </style>
 </head>
 <body>
   <main class="host">
-    <header class="bar"><div><strong>Validation réelle · AgentVegan Kitchen 2.0.1</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
-    <iframe id="app" class="frame" title="AgentVegan Kitchen" src="/app" sandbox="allow-scripts"></iframe>
+    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.5</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
+    <iframe id="app" class="frame" title="Agent Vegan" src="/app" sandbox="allow-scripts"></iframe>
   </main>
   <script>
     const initialResult = ${json(initialResult)};
+    const simulateReload = new URLSearchParams(location.search).has("reload-empty");
     const frame = document.querySelector("#app");
     const status = document.querySelector("#status");
     let initialized = false;
@@ -47,7 +48,7 @@ const hostHtml = `<!doctype html>
       const args = params?.arguments ?? {};
       let url;
       if (name === "get_recipe") url = "/recipes/" + encodeURIComponent(args.id);
-      else if (name === "search_recipes") {
+      else if (name === "search_recipes" || name === "explore_recipes") {
         const query = new URLSearchParams();
         for (const [key, value] of Object.entries(args)) {
           if (value === undefined || value === null) continue;
@@ -68,7 +69,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/initialize") {
           send({ jsonrpc: "2.0", id: message.id, result: {
             protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.1" },
+            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.5" },
             hostCapabilities: {
               openLinks: {},
               serverTools: {},
@@ -79,7 +80,7 @@ const hostHtml = `<!doctype html>
               displayMode: "inline",
               availableDisplayModes: ["inline", "fullscreen"],
               containerDimensions: { width: 1400, maxHeight: 820 },
-              locale: "fr-FR",
+              locale: "fr_FR",
               timeZone: "Europe/Paris",
               platform: "web",
               deviceCapabilities: { touch: false, hover: true },
@@ -91,7 +92,11 @@ const hostHtml = `<!doctype html>
           initialized = true;
           status.textContent = "Bridge connecté · données de production";
           send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: { limit: 6 } } });
-          send({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: resultEnvelope(initialResult) });
+          send({
+            jsonrpc: "2.0",
+            method: "ui/notifications/tool-result",
+            params: simulateReload ? {} : resultEnvelope(initialResult),
+          });
           return;
         }
         if (message.method === "tools/call") {
@@ -137,5 +142,5 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  process.stdout.write(`Hôte visuel AgentVegan Kitchen : http://127.0.0.1:${port}/\n`);
+  process.stdout.write(`Hôte visuel Agent Vegan : http://127.0.0.1:${port}/\n`);
 });

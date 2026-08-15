@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "org.agentvegan/public-data",
-  "title": "AgentVegan Public Data",
-  "description": "Recettes véganes, ingrédients, nutrition, substitutions, enseignes et produits publics",
-  "version": "2.0.1",
+  "title": "Agent Vegan",
+  "description": "Recettes illustrées, nutrition, ingrédients, substitutions et magasins en France",
+  "version": "2.0.5",
   "repository": {
     "url": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
     "source": "github"
@@ -18,7 +18,7 @@
     {
       "registryType": "npm",
       "identifier": "@agentvegan/public-data-mcp",
-      "version": "2.0.1",
+      "version": "2.0.5",
       "transport": {
         "type": "stdio"
       },

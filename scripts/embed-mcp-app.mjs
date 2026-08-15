@@ -5,7 +5,7 @@ const input = resolve("web/dist/index.html");
 const output = resolve("src/generated/mcp-app-html.ts");
 const html = await readFile(input, "utf8");
 
-if (!html.includes("AgentVegan interactif") || !html.includes("ui/notifications")) {
+if (!html.includes("Agent Vegan") || !html.includes("ui/notifications")) {
   throw new Error("Le bundle MCP Apps ne contient pas les marqueurs attendus ; génération refusée.");
 }
 

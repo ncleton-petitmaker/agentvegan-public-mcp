@@ -16,7 +16,7 @@ Utiliser ce skill lorsqu’une personne cherche une recette végane, un ingrédi
 - Les informations nutritionnelles ne remplacent pas un avis médical.
 - En cas d’ingrédient ambigu, montrer les choix renvoyés et demander l’identifiant visé.
 - En cas de `DATASET_STALE`, expliquer que le catalogue a dépassé sa durée maximale de fraîcheur et consulter `get_catalog_status`.
-- Pour proposer ou faire choisir des recettes, appeler directement `explore_recipes`. Pour ouvrir une recette complète ou cuisiner pas à pas, appeler `cook_recipe`. Les outils `search_recipes` et `get_recipe` déclarent aussi AgentVegan Kitchen pour garantir l’affichage dans un hôte compatible.
+- Pour proposer ou faire choisir des recettes, appeler directement `explore_recipes`. Pour ouvrir une recette complète ou cuisiner pas à pas, appeler `cook_recipe`. Les outils `search_recipes` et `get_recipe` déclarent aussi Agent Vegan pour garantir l’affichage dans un hôte compatible.
 - Pour les autres parcours visuels, utiliser `explore_plant_products`, `compare_nutrition_interactively` ou `explore_ingredient`.
 - Limiter les galeries à 3–8 éléments. Conserver le contexte de recherche et `next_cursor` pour que l’interface puisse paginer sans perdre les filtres.
 

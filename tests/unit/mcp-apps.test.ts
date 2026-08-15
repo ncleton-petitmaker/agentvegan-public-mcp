@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { nutritionComparisonForUi, productCardForUi, recipeCardForUi, recipeDetailForUi } from "../../src/mcp-apps.js";
+import { MCP_APP_HTML } from "../../src/generated/mcp-app-html.js";
 
 describe("projection MCP Apps", () => {
+  it("préserve le ratio natif des images sans recadrage", () => {
+    expect(MCP_APP_HTML).toContain("naturalWidth");
+    expect(MCP_APP_HTML).toContain("--media-aspect");
+    expect(MCP_APP_HTML).toContain("object-fit:contain");
+    expect(MCP_APP_HTML).not.toContain("object-fit:cover");
+  });
+
   it("normalise les images d’étapes vers le domaine public", () => {
     const recipe = recipeDetailForUi({
       id: "recette-test",

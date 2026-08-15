@@ -65,7 +65,7 @@ if (process.argv.includes("--remote") && failures.length === 0) {
 }
 
 if (failures.length) {
-  throw new Error(`Contrat AgentVegan Kitchen invalide (${failures.length} erreur(s)) :\n${failures.slice(0, 30).join("\n")}`);
+  throw new Error(`Contrat Agent Vegan invalide (${failures.length} erreur(s)) :\n${failures.slice(0, 30).join("\n")}`);
 }
 
-process.stdout.write(`AgentVegan Kitchen vérifié : ${catalog.recipes.length} recettes, ${stepCount} étapes, ${imageUrls.length} images, ${minimums.priorityNutrientsPerRecipe} nutriments prioritaires par recette${process.argv.includes("--remote") ? " et toutes les images publiques en ligne" : ""}.\n`);
+process.stdout.write(`Agent Vegan vérifié : ${catalog.recipes.length} recettes, ${stepCount} étapes, ${imageUrls.length} images, ${minimums.priorityNutrientsPerRecipe} nutriments prioritaires par recette${process.argv.includes("--remote") ? " et toutes les images publiques en ligne" : ""}.\n`);

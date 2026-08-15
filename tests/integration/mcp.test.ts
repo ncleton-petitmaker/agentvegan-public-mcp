@@ -24,6 +24,13 @@ describe("MCP officiel", () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     try {
+      expect(client.getServerVersion()).toMatchObject({
+        name: "agentvegan",
+        title: "Agent Vegan",
+        description: expect.stringContaining("recettes illustrées"),
+        websiteUrl: "https://mcp.agentvegan.org/",
+        icons: expect.arrayContaining([{ src: "https://mcp.agentvegan.org/logo.png", mimeType: "image/png", sizes: ["512x512"] }]),
+      });
       const tools = await client.listTools();
       expect(tools.tools.map((tool) => tool.name).sort()).toEqual([
         "compare_nutrition", "compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "find_stores_for_ingredient", "find_substitutes", "get_catalog_status", "get_ingredient", "get_recipe", "search_ingredients", "search_plant_products", "search_recipes",
@@ -73,10 +80,10 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v3.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v7.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
-      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("AgentVegan interactif");
+      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");
     } finally {
       await client.close();
       await server.close();

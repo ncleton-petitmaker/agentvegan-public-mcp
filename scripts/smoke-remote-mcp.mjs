@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.1" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.5" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -37,13 +37,17 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v3.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v7.html" });
   const resource = ui.contents[0];
-  if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("AgentVegan interactif")) {
+  if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");
   }
 
-  process.stdout.write(`Production vérifiée : 14 outils, AgentVegan Kitchen et ${steps.length} étapes illustrées sur ${endpoint.href}.\n`);
+  const identity = client.getServerVersion();
+  if (identity?.title !== "Agent Vegan" || identity.icons?.[0]?.src !== "https://mcp.agentvegan.org/logo.png") {
+    throw new Error("L’identité publique Agent Vegan ou son logo PNG n’est pas annoncée par le serveur.");
+  }
+  process.stdout.write(`Production vérifiée : 14 outils, Agent Vegan et ${steps.length} étapes illustrées sur ${endpoint.href}.\n`);
 } finally {
   await client.close();
 }

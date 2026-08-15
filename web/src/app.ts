@@ -1,6 +1,7 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import { z } from "zod";
 import "./styles.css";
+import { canonicalLocale } from "./locale";
 import { toolResultPayloadCandidates } from "./tool-result";
 
 const IMAGE_ORIGINS = new Set([
@@ -213,6 +214,9 @@ interface GalleryPage<T> {
 }
 
 interface OpenAiExtensions {
+  toolOutput?: unknown;
+  toolInput?: unknown;
+  toolResponseMetadata?: unknown;
   widgetState?: unknown;
   setWidgetState?: (state: Record<string, unknown>) => Promise<void> | void;
 }
@@ -226,7 +230,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "AgentVegan Kitchen", version: "2.0.1" },
+  { name: "Agent Vegan", version: "2.0.5" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -239,6 +243,8 @@ let productPages: GalleryPage<ProductCard>[] = [];
 let recipeSearch: Record<string, unknown> = {};
 let productSearch: Record<string, unknown> = {};
 let activeTimer: number | null = null;
+let latestToolArguments: Record<string, unknown> = {};
+let restoreInFlight = false;
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
@@ -265,12 +271,12 @@ function formatDate(value: string | null | undefined): string {
   if (!value) return "date inconnue";
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "date invalide";
-  const locale = app.getHostContext()?.locale ?? document.documentElement.lang ?? "fr-FR";
+  const locale = canonicalLocale(app.getHostContext()?.locale ?? document.documentElement.lang);
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
 function formatNumber(value: number, maximumFractionDigits = 1): string {
-  const locale = app.getHostContext()?.locale ?? document.documentElement.lang ?? "fr-FR";
+  const locale = canonicalLocale(app.getHostContext()?.locale ?? document.documentElement.lang);
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
 }
 
@@ -285,13 +291,22 @@ function imageMedia(url: string | null | undefined, alt: string, loading: "lazy"
     return media;
   }
   const image = element("img");
-  image.src = url;
   image.alt = alt;
   image.loading = loading;
   image.decoding = "async";
+  const preserveSourceRatio = (): void => {
+    if (image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    media.style.setProperty("--media-aspect", `${image.naturalWidth} / ${image.naturalHeight}`);
+    media.dataset.orientation = image.naturalWidth === image.naturalHeight
+      ? "square"
+      : image.naturalWidth > image.naturalHeight ? "landscape" : "portrait";
+  };
+  image.addEventListener("load", preserveSourceRatio, { once: true });
   image.addEventListener("error", () => {
     media.replaceChildren(element("span", "image-error", "L’image source n’est pas accessible actuellement."));
   }, { once: true });
+  image.src = url;
+  if (image.complete) preserveSourceRatio();
   media.append(image);
   return media;
 }
@@ -699,7 +714,7 @@ function renderCookMode(recipe: RecipeDetail, envelope: Envelope, requestedIndex
 }
 
 function renderRecipeDetail(recipe: RecipeDetail, envelope: Envelope): void {
-  const view = shell(recipe.title, "AgentVegan Kitchen · recette complète");
+  const view = shell(recipe.title, "Agent Vegan · recette complète");
   if (savedGallery) view.actions.append(button("Retour aux recettes", () => savedGallery?.()));
   addFullscreenAction(view.actions);
 
@@ -1015,15 +1030,86 @@ function handleToolResult(value: unknown): void {
   showError("Cette ressource interactive ne reconnaît pas le type de vue demandé.");
 }
 
+function replayChatGptToolOutput(value: unknown = window.openai?.toolOutput): boolean {
+  const direct = EnvelopeSchema.safeParse(value);
+  if (direct.success) {
+    handleToolResult(direct.data);
+    return true;
+  }
+  if (!value || typeof value !== "object") return false;
+  for (const candidate of toolResultPayloadCandidates(value)) {
+    if (!EnvelopeSchema.safeParse(candidate).success) continue;
+    handleToolResult(candidate);
+    return true;
+  }
+  return false;
+}
+
+function recoveryToolName(): string | null {
+  const declared = app.getHostContext()?.toolInfo?.tool.name;
+  if (typeof declared === "string" && [
+    "search_recipes",
+    "get_recipe",
+    "explore_recipes",
+    "cook_recipe",
+    "explore_plant_products",
+    "compare_nutrition_interactively",
+    "explore_ingredient",
+  ].includes(declared)) return declared;
+  if (typeof latestToolArguments.recipe_id === "string") return "cook_recipe";
+  if (typeof latestToolArguments.id === "string") return "get_recipe";
+  if (Array.isArray(latestToolArguments.entities)) return "compare_nutrition_interactively";
+  if (typeof latestToolArguments.ingredient === "string") return "explore_ingredient";
+  return "explore_recipes";
+}
+
+async function restoreFromToolInput(): Promise<boolean> {
+  if (restoreInFlight) return false;
+  restoreInFlight = true;
+  try {
+    for (let attempt = 0; attempt < 40 && !connected; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    }
+    if (!connected || currentEnvelope !== null) return currentEnvelope !== null;
+    const name = recoveryToolName();
+    if (!name) return false;
+    const envelope = await callTool(name, latestToolArguments);
+    handleToolResult(envelope);
+    return currentEnvelope !== null;
+  } catch {
+    return false;
+  } finally {
+    restoreInFlight = false;
+  }
+}
+
 function applyHostContext(): void {
   const context = app.getHostContext();
   document.documentElement.dataset.theme = context?.theme === "dark" ? "dark" : "light";
   document.documentElement.dataset.displayMode = context?.displayMode ?? "inline";
-  if (context?.locale) document.documentElement.lang = context.locale;
+  document.documentElement.lang = canonicalLocale(context?.locale ?? document.documentElement.lang);
 }
 
-app.addEventListener("toolresult", (result) => handleToolResult(result.structuredContent));
+app.addEventListener("toolinput", (input) => {
+  latestToolArguments = input.arguments ?? {};
+});
+app.addEventListener("toolresult", (result) => {
+  for (const candidate of toolResultPayloadCandidates(result)) {
+    if (!EnvelopeSchema.safeParse(candidate).success) continue;
+    handleToolResult(candidate);
+    return;
+  }
+  if (replayChatGptToolOutput()) return;
+  replaceRoot(element("p", "status", "Restauration de l’app Agent Vegan…"));
+  void restoreFromToolInput().then((restored) => {
+    if (!restored && currentEnvelope === null) showError("Le résultat de l’outil ne contient aucun contrat public AgentVegan valide.");
+  });
+});
 app.addEventListener("hostcontextchanged", applyHostContext);
+window.addEventListener("openai:set_globals", (event) => {
+  const globals = (event as CustomEvent<{ globals?: OpenAiExtensions }>).detail?.globals;
+  if (globals?.toolOutput !== undefined) replayChatGptToolOutput(globals.toolOutput);
+});
 app.onteardown = async () => {
   if (activeTimer !== null) window.clearInterval(activeTimer);
   activeTimer = null;
@@ -1033,6 +1119,7 @@ app.onteardown = async () => {
 void app.connect().then(() => {
   connected = true;
   applyHostContext();
+  if (currentEnvelope === null) replayChatGptToolOutput();
 }).catch((error: unknown) => {
   showError(error instanceof Error ? `Connexion à l’hôte impossible : ${error.message}` : "Connexion à l’hôte impossible.");
 });

@@ -64,17 +64,20 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
-    name: "AgentVegan Public Data",
-    version: "2.0.1",
-    title: "AgentVegan",
-    description: "Recettes véganes françaises, ingrédients, nutrition sourcée, substitutions, enseignes et produits végétaux publics.",
+    name: "agentvegan",
+    version: "2.0.5",
+    title: "Agent Vegan",
+    description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
-    icons: [{ src: "https://mcp.agentvegan.org/logo.svg", mimeType: "image/svg+xml" }],
+    icons: [
+      { src: "https://mcp.agentvegan.org/logo.png", mimeType: "image/png", sizes: ["512x512"] },
+      { src: "https://mcp.agentvegan.org/logo.svg", mimeType: "image/svg+xml", sizes: ["any"] },
+    ],
   });
 
   server.registerTool("search_recipes", {
     title: "Rechercher des recettes véganes",
-    description: "Recherche les recettes véganes publiques. Dans un hôte compatible MCP Apps, affiche directement une galerie AgentVegan Kitchen illustrée ; pour un parcours visuel explicitement demandé, explore_recipes fournit la même expérience optimisée.",
+    description: "Recherche les recettes véganes publiques. Dans un hôte compatible MCP Apps, affiche directement une galerie Agent Vegan illustrée ; pour un parcours visuel explicitement demandé, explore_recipes fournit la même expérience optimisée.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
     inputSchema: z.object({
@@ -165,7 +168,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
   }, () => call(() => service.getCatalogStatus() as Promise<Record<string, unknown>>));
 
   server.registerTool("explore_recipes", {
-    title: "Explorer des recettes dans AgentVegan Kitchen",
+    title: "Explorer des recettes avec Agent Vegan",
     description: "Utilisez cet outil lorsqu’une personne demande de proposer, trouver, découvrir, voir ou choisir des recettes. Il effectue la recherche et affiche directement un carrousel illustré interactif ; aucun appel préalable à search_recipes n’est nécessaire.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
@@ -194,7 +197,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
   }));
 
   server.registerTool("cook_recipe", {
-    title: "Cuisiner une recette dans AgentVegan Kitchen",
+    title: "Cuisiner une recette avec Agent Vegan",
     description: "Utilisez cet outil lorsqu’une personne veut ouvrir, voir, lire, préparer ou cuisiner une recette, consulter ses étapes ou afficher la recette complète. Il ouvre directement le cockpit avec image principale, ingrédients, nutrition et toutes les étapes illustrées.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.kitchen, "Ouverture du cockpit cuisine…", "Recette prête à cuisiner"),

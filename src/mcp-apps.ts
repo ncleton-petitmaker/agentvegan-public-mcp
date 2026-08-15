@@ -4,10 +4,10 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v3.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v3.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v3.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v3.html",
+  kitchen: "ui://agentvegan/kitchen/v7.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v7.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v7.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v7.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -37,7 +37,7 @@ interface UiResource {
 }
 
 const UI_RESOURCES: UiResource[] = [
-  { uri: MCP_APP_URIS.kitchen, title: "AgentVegan Kitchen", description: "Galerie et cockpit cuisine plein écran avec toutes les étapes illustrées." },
+  { uri: MCP_APP_URIS.kitchen, title: "Agent Vegan", description: "Recettes illustrées, fiche nutritionnelle et mode cuisine pas à pas avec toutes les étapes." },
   { uri: MCP_APP_URIS.plantProductGallery, title: "Galerie de produits végétaux AgentVegan", description: "Produits végétaux illustrés et offres commerciales datées." },
   { uri: MCP_APP_URIS.nutritionComparison, title: "Comparaison nutritionnelle AgentVegan", description: "Comparaison interactive sur une base nutritionnelle explicite." },
   { uri: MCP_APP_URIS.ingredientExplorer, title: "Explorateur d’ingrédient AgentVegan", description: "Fiche ingrédient, magasins, substitutions et recettes associées." },
@@ -80,12 +80,12 @@ function requiredRecipeImage(value: unknown, context: string): string {
 
 function normalizeRecipeSteps(value: unknown): JsonObject | null {
   const guide = record(value);
-  if (!guide) throw new Error("Le guide de recette requis par AgentVegan Kitchen est absent.");
+  if (!guide) throw new Error("Le guide de recette requis par Agent Vegan est absent.");
   const candidates = array(guide.steps);
-  if (!candidates.length) throw new Error("Le guide de recette requis par AgentVegan Kitchen ne contient aucune étape.");
+  if (!candidates.length) throw new Error("Le guide de recette requis par Agent Vegan ne contient aucune étape.");
   const steps = candidates.map((candidate, index) => {
     const step = record(candidate);
-    if (!step) throw new Error(`L’étape ${index + 1} ne respecte pas le contrat AgentVegan Kitchen.`);
+    if (!step) throw new Error(`L’étape ${index + 1} ne respecte pas le contrat Agent Vegan.`);
     const instruction = stringOrNull(step.beginner_instruction) ?? stringOrNull(step.short_instruction);
     if (!instruction?.trim()) throw new Error(`L’étape ${index + 1} ne contient aucune instruction publique.`);
     return {
