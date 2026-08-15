@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.15" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.16" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -41,12 +41,12 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v17.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v18.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");
   }
-  if (!resource.text.includes("Détails") || !resource.text.includes("Ouvrir l’offre") || !resource.text.includes("Nutri-Score") || resource.text.includes("Mode Yuka") || resource.text.includes("Voir l’offre datée") || resource.text.includes("score-medallion") || resource.text.includes("Score de preuve catalogue")) {
+  if (!resource.text.includes("Détails") || !resource.text.includes("Ouvrir l’offre") || !resource.text.includes("Nutri-Score") || resource.text.includes("Mode Yuka") || resource.text.includes("Voir l’offre datée") || resource.text.includes("score-medallion") || resource.text.includes("Score de preuve catalogue") || resource.text.includes("Toutes les étapes, sans résumé inventé")) {
     throw new Error("Les libellés ou le Nutri-Score de l’interface distante ne correspondent pas à la version publiée.");
   }
 

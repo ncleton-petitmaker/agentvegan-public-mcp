@@ -325,7 +325,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.15" },
+  { name: "Agent Vegan", version: "2.0.16" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -917,7 +917,7 @@ function renderRecipeDetail(recipe: RecipeDetail, envelope: Envelope): void {
   const stepsSection = element("section", "step-library");
   const heading = element("div", "section-title");
   heading.append(element("div", "", ""), element("span", "chip good", `${recipe.guide.steps.length} images · ${recipe.guide.steps.length} instructions`));
-  heading.firstElementChild?.append(element("p", "eyebrow", "Parcours complet"), element("h2", "", "Toutes les étapes, sans résumé inventé"));
+  heading.firstElementChild?.append(element("p", "eyebrow", "Parcours complet"));
   stepsSection.append(heading);
   const steps = element("div", "step-filmstrip");
   recipe.guide.steps.forEach((step, index) => {
