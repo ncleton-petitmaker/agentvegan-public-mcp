@@ -21,8 +21,8 @@
   "d1_databases": [
     {
       "binding": "PUBLIC_DATA",
-      "database_name": "agentvegan-public-data-v1",
-      "database_id": "REPLACE_AFTER_D1_CREATION",
+      "database_name": "agentvegan-public-data-v1-660ac999953893cc",
+      "database_id": "9e77d038-e3b6-4b88-8aa9-95cd2bd263a3",
       "migrations_dir": "migrations"
     }
   ],
