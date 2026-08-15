@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.0" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.1" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -37,7 +37,7 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v2.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v3.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("AgentVegan interactif")) {
     throw new Error("La ressource UI distante est absente ou invalide.");

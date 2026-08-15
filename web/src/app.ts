@@ -1,6 +1,7 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import { z } from "zod";
 import "./styles.css";
+import { toolResultPayloadCandidates } from "./tool-result";
 
 const IMAGE_ORIGINS = new Set([
   "https://agentvegan.org",
@@ -225,7 +226,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "AgentVegan Kitchen", version: "2.0.0" },
+  { name: "AgentVegan Kitchen", version: "2.0.1" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -361,9 +362,11 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<En
     const text = result.content?.find((item) => item.type === "text");
     throw new Error(text && "text" in text ? text.text : `L’outil ${name} a échoué.`);
   }
-  const parsed = EnvelopeSchema.safeParse(result.structuredContent);
-  if (!parsed.success) throw new Error(`La réponse structurée de ${name} ne respecte pas le contrat public.`);
-  return parsed.data;
+  for (const candidate of toolResultPayloadCandidates(result)) {
+    const parsed = EnvelopeSchema.safeParse(candidate);
+    if (parsed.success) return parsed.data;
+  }
+  throw new Error(`La réponse de ${name} ne contient aucun contrat public AgentVegan valide.`);
 }
 
 async function openExternal(url: string | null | undefined): Promise<void> {

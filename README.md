@@ -80,7 +80,7 @@ npm run data:sync
 npm test
 ```
 
-Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils publics et les cinq points d’entrée visuels sont annotés lecture seule, non destructifs et idempotents. Les quatre ressources `ui://agentvegan/.../v2.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. `search_recipes` et `get_recipe` déclarent eux-mêmes AgentVegan Kitchen afin que l’interface s’affiche même si l’hôte choisit directement l’outil de données ; les outils `explore_*` et `cook_recipe` rendent le parcours visuel explicite. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt.
+Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils publics et les cinq points d’entrée visuels sont annotés lecture seule, non destructifs et idempotents. Les quatre ressources `ui://agentvegan/.../v3.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. `search_recipes` et `get_recipe` déclarent eux-mêmes AgentVegan Kitchen afin que l’interface s’affiche même si l’hôte choisit directement l’outil de données ; les outils `explore_*` et `cook_recipe` rendent le parcours visuel explicite. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt. Pour les appels déclenchés dans l’iframe, l’interface valide d’abord le `structuredContent` MCP standard puis, lorsque le pont ChatGPT ne le relaie pas, le même contrat JSON canonique présent dans le bloc texte MCP.
 
 Le bundle UI est produit en fichier unique et embarqué dans le serveur :
 
@@ -88,6 +88,13 @@ Le bundle UI est produit en fichier unique et embarqué dans le serveur :
 npm run build:ui
 npm run test:kitchen
 npm test
+```
+
+Le banc de validation visuelle charge uniquement les vraies données de l’API de production et implémente le pont MCP Apps dans un hôte local :
+
+```bash
+npm run build:ui
+npm run preview:kitchen
 ```
 
 ## Déploiement atomique

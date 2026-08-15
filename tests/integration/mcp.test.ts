@@ -73,7 +73,7 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v2.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v3.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("AgentVegan interactif");
