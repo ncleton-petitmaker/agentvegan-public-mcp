@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.5" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.6" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -27,6 +27,10 @@ try {
   }
   const gallery = await client.callTool({ name: "explore_recipes", arguments: { limit: 3 } });
   if (gallery.isError || gallery.structuredContent?.data?.view !== "recipe_gallery") throw new Error("Le rendu distant de la galerie a échoué.");
+  const genericGallery = await client.callTool({ name: "explore_recipes", arguments: { query: "propose-moi 6 recettes vegan", limit: 6 } });
+  if (genericGallery.isError || genericGallery.structuredContent?.data?.items?.length !== 6) {
+    throw new Error("La demande générique de six recettes est interprétée à tort comme une indisponibilité du catalogue.");
+  }
 
   const firstRecipeId = gallery.structuredContent?.data?.items?.[0]?.id;
   const kitchen = await client.callTool({ name: "cook_recipe", arguments: { recipe_id: firstRecipeId } });
@@ -37,7 +41,7 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v7.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v8.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");

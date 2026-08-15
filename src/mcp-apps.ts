@@ -4,10 +4,10 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v7.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v7.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v7.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v7.html",
+  kitchen: "ui://agentvegan/kitchen/v8.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v8.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v8.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v8.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [

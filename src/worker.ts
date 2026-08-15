@@ -5,6 +5,7 @@ import { openApiDocument } from "./openapi.js";
 import { D1CatalogRepository } from "./repository-d1.js";
 import { errorPayload, PublicDataError } from "./errors.js";
 import { PublicDataService } from "./service.js";
+import { rateLimitKey } from "./rate-limit-key.js";
 import serverRegistry from "../server.json" with { type: "json" };
 
 export interface Env {
@@ -47,8 +48,7 @@ async function rateLimit(request: Request, env: Env): Promise<void> {
   if (!env.PUBLIC_RATE_LIMITER) {
     throw new PublicDataError("DATASET_UNAVAILABLE", "La limitation anti-abus PUBLIC_RATE_LIMITER est absente de l’environnement.", 503);
   }
-  const clientKey = request.headers.get("CF-Connecting-IP") ?? "local-or-unknown";
-  const outcome = await env.PUBLIC_RATE_LIMITER.limit({ key: clientKey });
+  const outcome = await env.PUBLIC_RATE_LIMITER.limit({ key: rateLimitKey(request) });
   if (!outcome.success) {
     throw new PublicDataError("RATE_LIMITED", "Trop de requêtes. Réessayez dans une minute.", 429);
   }

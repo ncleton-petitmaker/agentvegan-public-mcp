@@ -1,6 +1,7 @@
 import { McpServer, ResourceTemplate, type CallToolResult, type ReadResourceResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { errorPayload } from "./errors.js";
+import { errorPayload, PublicDataError } from "./errors.js";
+import { normalizeRecipeDiscoveryQuery } from "./recipe-discovery-query.js";
 import { PublicDataService } from "./service.js";
 import type { JsonObject, PublicEntity } from "./contracts.js";
 import {
@@ -65,7 +66,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.5",
+    version: "2.0.6",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -169,7 +170,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("explore_recipes", {
     title: "Explorer des recettes avec Agent Vegan",
-    description: "Utilisez cet outil lorsqu’une personne demande de proposer, trouver, découvrir, voir ou choisir des recettes. Il effectue la recherche et affiche directement un carrousel illustré interactif ; aucun appel préalable à search_recipes n’est nécessaire.",
+    description: "Utilisez cet outil lorsqu’une personne demande de proposer, trouver, découvrir, voir ou choisir des recettes. Il effectue la recherche et affiche directement un carrousel illustré interactif ; aucun appel préalable à search_recipes ou get_catalog_status n’est nécessaire. Omettez query quand la demande contient seulement des mots génériques comme ‘6 recettes vegan’.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
     inputSchema: z.object({
@@ -183,10 +184,16 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
       cursor: z.string().optional().describe("Curseur de page suivant opaque."),
     }),
   }, (input) => call(async () => {
-    const response = await service.searchRecipes({ ...input, limit: input.limit ?? 6 });
-    if (!Array.isArray(response.data) || !response.data.length) throw new Error("Aucune recette ne correspond à cette recherche.");
+    const searchInput = { ...input, limit: input.limit ?? 6 };
+    const normalizedQuery = normalizeRecipeDiscoveryQuery(input.query);
+    if (normalizedQuery) searchInput.query = normalizedQuery;
+    else delete searchInput.query;
+    const response = await service.searchRecipes(searchInput);
+    if (!Array.isArray(response.data) || !response.data.length) {
+      throw new PublicDataError("NOT_FOUND", "Aucune recette ne correspond à cette recherche. Modifiez les critères culinaires demandés.", 404);
+    }
     const items = response.data.map((recipe) => recipeCardForUi(recipe));
-    const search = { ...input } as JsonObject;
+    const search = { ...searchInput } as JsonObject;
     delete search.cursor;
     return viewEnvelope(response, {
       view: "recipe_gallery",

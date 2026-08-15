@@ -51,6 +51,10 @@ describe("MCP officiel", () => {
       const gallery = await client.callTool({ name: "explore_recipes", arguments: { limit: 3 } });
       expect(gallery.isError).not.toBe(true);
       expect(gallery.structuredContent).toMatchObject({ data: { view: "recipe_gallery", items: expect.any(Array), next_cursor: expect.any(String) } });
+      const genericGallery = await client.callTool({ name: "explore_recipes", arguments: { query: "propose-moi 6 recettes vegan", limit: 6 } });
+      expect(genericGallery.isError).not.toBe(true);
+      expect(genericGallery.structuredContent).toMatchObject({ data: { view: "recipe_gallery", items: expect.arrayContaining([expect.objectContaining({ image_url: expect.stringContaining("https://agentvegan.org/") })]) } });
+      expect((genericGallery.structuredContent as { data: { items: unknown[] } }).data.items).toHaveLength(6);
 
       const detail = await client.callTool({ name: "cook_recipe", arguments: { recipe_id: searchEnvelope.data[0]?.id } });
       expect(detail.isError).not.toBe(true);
@@ -80,7 +84,7 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v7.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v8.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");

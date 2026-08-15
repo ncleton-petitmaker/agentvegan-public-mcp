@@ -29,7 +29,7 @@ const hostHtml = `<!doctype html>
 </head>
 <body>
   <main class="host">
-    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.5</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
+    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.6</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
     <iframe id="app" class="frame" title="Agent Vegan" src="/app" sandbox="allow-scripts"></iframe>
   </main>
   <script>
@@ -69,7 +69,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/initialize") {
           send({ jsonrpc: "2.0", id: message.id, result: {
             protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.5" },
+            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.6" },
             hostCapabilities: {
               openLinks: {},
               serverTools: {},

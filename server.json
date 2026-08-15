@@ -3,7 +3,7 @@
   "name": "org.agentvegan/public-data",
   "title": "Agent Vegan",
   "description": "Recettes illustrées, nutrition, ingrédients, substitutions et magasins en France",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "repository": {
     "url": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
     "source": "github"
@@ -18,7 +18,7 @@
     {
       "registryType": "npm",
       "identifier": "@agentvegan/public-data-mcp",
-      "version": "2.0.5",
+      "version": "2.0.6",
       "transport": {
         "type": "stdio"
       },
