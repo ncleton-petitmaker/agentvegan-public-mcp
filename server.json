@@ -3,7 +3,7 @@
   "name": "org.agentvegan/public-data",
   "title": "AgentVegan Public Data",
   "description": "Recettes véganes, ingrédients, nutrition, substitutions, enseignes et produits publics",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "repository": {
     "url": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
     "source": "github"
@@ -18,7 +18,7 @@
     {
       "registryType": "npm",
       "identifier": "@agentvegan/public-data-mcp",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       },

@@ -4,11 +4,10 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  recipeGallery: "ui://agentvegan/recipe-gallery/v1.html",
-  recipeDetail: "ui://agentvegan/recipe-detail/v1.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v1.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v1.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v1.html",
+  kitchen: "ui://agentvegan/kitchen/v2.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v2.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v2.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v2.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -38,8 +37,7 @@ interface UiResource {
 }
 
 const UI_RESOURCES: UiResource[] = [
-  { uri: MCP_APP_URIS.recipeGallery, title: "Galerie de recettes AgentVegan", description: "Carrousel paginé de recettes véganes illustrées." },
-  { uri: MCP_APP_URIS.recipeDetail, title: "Fiche recette AgentVegan", description: "Recette interactive avec ingrédients, nutrition et étapes illustrées." },
+  { uri: MCP_APP_URIS.kitchen, title: "AgentVegan Kitchen", description: "Galerie et cockpit cuisine plein écran avec toutes les étapes illustrées." },
   { uri: MCP_APP_URIS.plantProductGallery, title: "Galerie de produits végétaux AgentVegan", description: "Produits végétaux illustrés et offres commerciales datées." },
   { uri: MCP_APP_URIS.nutritionComparison, title: "Comparaison nutritionnelle AgentVegan", description: "Comparaison interactive sur une base nutritionnelle explicite." },
   { uri: MCP_APP_URIS.ingredientExplorer, title: "Explorateur d’ingrédient AgentVegan", description: "Fiche ingrédient, magasins, substitutions et recettes associées." },
@@ -72,17 +70,30 @@ function absoluteAgentVeganImage(value: unknown): string | null {
   }
 }
 
+function requiredRecipeImage(value: unknown, context: string): string {
+  const image = absoluteAgentVeganImage(value);
+  if (!image || new URL(image).origin !== "https://agentvegan.org") {
+    throw new Error(`Image publique AgentVegan absente ou invalide pour ${context}.`);
+  }
+  return image;
+}
+
 function normalizeRecipeSteps(value: unknown): JsonObject | null {
   const guide = record(value);
-  if (!guide) return null;
-  const steps = array(guide.steps).map((candidate) => {
+  if (!guide) throw new Error("Le guide de recette requis par AgentVegan Kitchen est absent.");
+  const candidates = array(guide.steps);
+  if (!candidates.length) throw new Error("Le guide de recette requis par AgentVegan Kitchen ne contient aucune étape.");
+  const steps = candidates.map((candidate, index) => {
     const step = record(candidate);
-    if (!step) return null;
+    if (!step) throw new Error(`L’étape ${index + 1} ne respecte pas le contrat AgentVegan Kitchen.`);
+    const instruction = stringOrNull(step.beginner_instruction) ?? stringOrNull(step.short_instruction);
+    if (!instruction?.trim()) throw new Error(`L’étape ${index + 1} ne contient aucune instruction publique.`);
     return {
       ...step,
-      image: absoluteAgentVeganImage(step.image),
+      beginner_instruction: instruction,
+      image: requiredRecipeImage(step.image, `l’étape ${index + 1}`),
     } as JsonObject;
-  }).filter((step): step is JsonObject => step !== null);
+  });
   return { ...guide, steps } as JsonObject;
 }
 
@@ -93,7 +104,7 @@ export function recipeDetailForUi(value: unknown): JsonObject {
   }
   return {
     ...recipe,
-    image_url: absoluteAgentVeganImage(recipe.image_url),
+    image_url: requiredRecipeImage(recipe.image_url, `la recette ${recipe.id}`),
     guide: normalizeRecipeSteps(recipe.guide),
   } as JsonObject;
 }
@@ -113,8 +124,10 @@ export function recipeCardForUi(value: unknown): JsonObject {
     meal: stringOrNull(recipe.meal),
     prep_minutes: numberOrNull(recipe.prep_minutes),
     servings: stringOrNull(recipe.servings),
-    image_url: absoluteAgentVeganImage(recipe.image_url),
+    image_url: requiredRecipeImage(recipe.image_url, `la recette ${recipe.id}`),
     url: stringOrNull(recipe.url),
+    servings_count: numberOrNull(recipe.servings_count),
+    step_count: numberOrNull(recipe.step_count),
     nutrition: array(directScores) as JsonValue[],
   };
 }

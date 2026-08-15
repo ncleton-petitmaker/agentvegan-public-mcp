@@ -2,7 +2,7 @@ import { McpServer, ResourceTemplate, type CallToolResult, type ReadResourceResu
 import { z } from "zod";
 import { errorPayload } from "./errors.js";
 import { PublicDataService } from "./service.js";
-import type { JsonObject, PublicEntity, PublicResponse, SourceReference } from "./contracts.js";
+import type { JsonObject, PublicEntity } from "./contracts.js";
 import {
   MCP_APP_URIS,
   nutritionComparisonForUi,
@@ -25,47 +25,13 @@ const pagination = {
   cursor: z.string().optional().describe("Curseur opaque renvoyé par l’appel précédent."),
 };
 
-const recipeSearchContext = z.object({
-  query: z.string().min(1).optional(),
-  ingredients: z.array(z.string().min(1)).max(10).optional(),
-  meal: z.string().min(1).optional(),
-  max_time_minutes: z.number().nonnegative().optional(),
-  nutrient: z.string().min(1).optional(),
-  nutrient_minimum: z.number().nonnegative().optional(),
-}).optional();
-
-const productSearchContext = z.object({
-  query: z.string().min(1).optional(),
-  brand: z.string().min(1).optional(),
-  category: z.string().min(1).optional(),
-  retailer: z.string().min(1).optional(),
-  in_stock_only: z.boolean().optional(),
-}).optional();
-
 function uiMeta(resourceUri: string, invoking: string, invoked: string): Record<string, unknown> {
   return {
-    ui: { resourceUri },
+    ui: { resourceUri, visibility: ["model", "app"] },
+    "ui/resourceUri": resourceUri,
     "openai/outputTemplate": resourceUri,
     "openai/toolInvocation/invoking": invoking,
     "openai/toolInvocation/invoked": invoked,
-  };
-}
-
-function mergeResponses(responses: PublicResponse[]): PublicResponse {
-  const first = responses[0];
-  if (!first) throw new Error("Aucune réponse publique à afficher.");
-  if (responses.some((response) => response.dataset_version !== first.dataset_version)) {
-    throw new Error("Les éléments demandés ne proviennent pas de la même version du catalogue.");
-  }
-  const sourceById = new Map<string, SourceReference>();
-  for (const response of responses) for (const source of response.sources) sourceById.set(source.id, source);
-  return {
-    dataset_version: first.dataset_version,
-    data: first.data,
-    next_cursor: null,
-    sources: [...sourceById.values()],
-    coverage_warnings: [...new Set(responses.flatMap((response) => response.coverage_warnings))],
-    checked_at: first.checked_at,
   };
 }
 
@@ -99,7 +65,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "AgentVegan Public Data",
-    version: "1.1.0",
+    version: "2.0.0",
     title: "AgentVegan",
     description: "Recettes véganes françaises, ingrédients, nutrition sourcée, substitutions, enseignes et produits végétaux publics.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -108,8 +74,9 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("search_recipes", {
     title: "Rechercher des recettes véganes",
-    description: "Recherche les recettes publiques AgentVegan par texte, ingrédients, repas, temps maximal et seuil nutritionnel par portion. Utiliser les identifiants de nutriments du catalogue, par exemple iron_mg.",
+    description: "Recherche les recettes véganes publiques. Dans un hôte compatible MCP Apps, affiche directement une galerie AgentVegan Kitchen illustrée ; pour un parcours visuel explicitement demandé, explore_recipes fournit la même expérience optimisée.",
     annotations,
+    _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
     inputSchema: z.object({
       query: z.string().min(1).optional().describe("Texte libre, par exemple crêpes ou curry."),
       ingredients: z.array(z.string().min(1)).max(10).optional().describe("Tous les ingrédients demandés doivent être présents."),
@@ -123,8 +90,9 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("get_recipe", {
     title: "Consulter une recette",
-    description: "Retourne une recette complète : étapes, ingrédients, nutrition, bases de calcul, bornes et sources.",
+    description: "Retourne et affiche une recette complète : image du plat, ingrédients, nutrition sourcée et chaque étape avec son texte, sa durée et son image. Pour ouvrir immédiatement le cockpit pas à pas, utilisez cook_recipe.",
     annotations,
+    _meta: uiMeta(MCP_APP_URIS.kitchen, "Ouverture de la recette…", "Recette complète prête"),
     inputSchema: z.object({ id: z.string().min(1).describe("Identifiant stable ou slug de recette.") }),
   }, ({ id }) => call(() => service.getRecipe(id) as Promise<Record<string, unknown>>));
 
@@ -196,62 +164,75 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     inputSchema: z.object({}),
   }, () => call(() => service.getCatalogStatus() as Promise<Record<string, unknown>>));
 
-  server.registerTool("render_recipe_gallery", {
-    title: "Afficher une galerie de recettes",
-    description: "Affiche 3 à 8 recettes déjà sélectionnées dans un carrousel illustré et paginé. Appelez d’abord search_recipes, puis transmettez ses identifiants, son contexte de recherche et son next_cursor.",
+  server.registerTool("explore_recipes", {
+    title: "Explorer des recettes dans AgentVegan Kitchen",
+    description: "Utilisez cet outil lorsqu’une personne demande de proposer, trouver, découvrir, voir ou choisir des recettes. Il effectue la recherche et affiche directement un carrousel illustré interactif ; aucun appel préalable à search_recipes n’est nécessaire.",
     annotations,
-    _meta: uiMeta(MCP_APP_URIS.recipeGallery, "Préparation de la galerie…", "Galerie prête"),
+    _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
     inputSchema: z.object({
-      recipe_ids: z.array(z.string().min(1)).min(3).max(8).describe("Identifiants issus de search_recipes, dans l’ordre d’affichage."),
-      search: recipeSearchContext.describe("Filtres réutilisés par la pagination interactive."),
-      next_cursor: z.string().nullable().optional().describe("Curseur renvoyé par search_recipes pour la page suivante."),
+      query: z.string().min(1).optional().describe("Texte libre, par exemple crêpes, curry ou aubergine."),
+      ingredients: z.array(z.string().min(1)).max(10).optional().describe("Ingrédients qui doivent tous être présents."),
+      meal: z.string().min(1).optional().describe("Type de repas souhaité."),
+      max_time_minutes: z.number().nonnegative().optional().describe("Durée maximale souhaitée."),
+      nutrient: z.string().min(1).optional().describe("Nutriment stable, par exemple iron_mg."),
+      nutrient_minimum: z.number().nonnegative().optional().describe("Minimum par portion dans l’unité du nutriment."),
+      limit: z.number().int().min(1).max(8).optional().describe("Nombre de cartes à afficher, 6 par défaut."),
+      cursor: z.string().optional().describe("Curseur de page suivant opaque."),
     }),
   }, (input) => call(async () => {
-    const responses = await Promise.all(input.recipe_ids.map((id) => service.getRecipe(id)));
-    const merged = mergeResponses(responses);
-    const items = responses.map((response) => recipeCardForUi(response.data));
-    return viewEnvelope(merged, {
+    const response = await service.searchRecipes({ ...input, limit: input.limit ?? 6 });
+    if (!Array.isArray(response.data) || !response.data.length) throw new Error("Aucune recette ne correspond à cette recherche.");
+    const items = response.data.map((recipe) => recipeCardForUi(recipe));
+    const search = { ...input } as JsonObject;
+    delete search.cursor;
+    return viewEnvelope(response, {
       view: "recipe_gallery",
       items,
-      search: (input.search ?? {}) as JsonObject,
-      next_cursor: input.next_cursor ?? null,
-    }, input.next_cursor ?? null);
+      search,
+      next_cursor: response.next_cursor,
+    }, response.next_cursor);
   }));
 
-  server.registerTool("render_recipe_detail", {
-    title: "Afficher une recette illustrée",
-    description: "Affiche une recette complète avec image principale, ingrédients, nutrition et étapes illustrées. Utilisez l’identifiant stable retourné par search_recipes ou get_recipe.",
+  server.registerTool("cook_recipe", {
+    title: "Cuisiner une recette dans AgentVegan Kitchen",
+    description: "Utilisez cet outil lorsqu’une personne veut ouvrir, voir, lire, préparer ou cuisiner une recette, consulter ses étapes ou afficher la recette complète. Il ouvre directement le cockpit avec image principale, ingrédients, nutrition et toutes les étapes illustrées.",
     annotations,
-    _meta: uiMeta(MCP_APP_URIS.recipeDetail, "Préparation de la recette…", "Recette prête"),
+    _meta: uiMeta(MCP_APP_URIS.kitchen, "Ouverture du cockpit cuisine…", "Recette prête à cuisiner"),
     inputSchema: z.object({ recipe_id: z.string().min(1) }),
   }, ({ recipe_id }) => call(async () => {
     const response = await service.getRecipe(recipe_id);
-    return viewEnvelope(response, { view: "recipe_detail", recipe: recipeDetailForUi(response.data) });
+    return viewEnvelope(response, { view: "recipe_kitchen", recipe: recipeDetailForUi(response.data) });
   }));
 
-  server.registerTool("render_plant_product_gallery", {
-    title: "Afficher une galerie de produits végétaux",
-    description: "Affiche 3 à 8 produits déjà sélectionnés avec leurs images et leurs offres datées. Appelez d’abord search_plant_products, puis transmettez ses identifiants, ses filtres et son next_cursor.",
+  server.registerTool("explore_plant_products", {
+    title: "Explorer des produits végétaux",
+    description: "Utilisez cet outil pour chercher et afficher directement des produits végétaux commerciaux illustrés avec leurs offres publiques datées.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.plantProductGallery, "Préparation des produits…", "Galerie produits prête"),
     inputSchema: z.object({
-      product_ids: z.array(z.string().min(1)).min(3).max(8),
-      search: productSearchContext.describe("Filtres réutilisés par la pagination interactive."),
-      next_cursor: z.string().nullable().optional(),
+      query: z.string().min(1).optional(),
+      brand: z.string().min(1).optional(),
+      category: z.string().min(1).optional(),
+      retailer: z.string().min(1).optional(),
+      in_stock_only: z.boolean().optional(),
+      limit: z.number().int().min(1).max(8).optional().describe("Nombre de cartes à afficher, 6 par défaut."),
+      cursor: z.string().optional(),
     }),
   }, (input) => call(async () => {
-    const responses = await Promise.all(input.product_ids.map((id) => service.getEntityRecord("plant-product", id)));
-    const merged = mergeResponses(responses);
-    const items = responses.map((response) => productCardForUi(response.data));
-    return viewEnvelope(merged, {
+    const response = await service.searchPlantProducts({ ...input, limit: input.limit ?? 6 });
+    if (!Array.isArray(response.data) || !response.data.length) throw new Error("Aucun produit végétal ne correspond à cette recherche.");
+    const items = response.data.map((product) => productCardForUi(product));
+    const search = { ...input } as JsonObject;
+    delete search.cursor;
+    return viewEnvelope(response, {
       view: "plant_product_gallery",
       items,
-      search: (input.search ?? {}) as JsonObject,
-      next_cursor: input.next_cursor ?? null,
-    }, input.next_cursor ?? null);
+      search,
+      next_cursor: response.next_cursor,
+    }, response.next_cursor);
   }));
 
-  server.registerTool("render_nutrition_comparison", {
+  server.registerTool("compare_nutrition_interactively", {
     title: "Afficher une comparaison nutritionnelle",
     description: "Affiche de manière interactive une comparaison déjà demandée sur une base explicite. Appelez d’abord compare_nutrition avec les mêmes entités et la même base.",
     annotations,
@@ -265,7 +246,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     return viewEnvelope(response, nutritionComparisonForUi(response.data));
   }));
 
-  server.registerTool("render_ingredient_explorer", {
+  server.registerTool("explore_ingredient", {
     title: "Afficher une fiche ingrédient interactive",
     description: "Affiche un ingrédient canonique avec ses recettes illustrées, ses preuves magasins datées et ses substitutions culinaires validées.",
     annotations,

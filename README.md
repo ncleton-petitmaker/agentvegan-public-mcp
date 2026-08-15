@@ -9,7 +9,7 @@ Service public, gratuit pour l’utilisateur, sans compte et en lecture seule po
 - OpenAPI : `https://mcp.agentvegan.org/openapi.json`
 - Exports : `https://mcp.agentvegan.org/exports/v1/manifest.json`
 
-Le même endpoint fournit aussi des interfaces [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) : carrousels d’images, fiches recettes illustrées, produits végétaux, magasins, substitutions et comparaisons nutritionnelles. Un client sans support MCP Apps continue de recevoir les réponses texte et `structuredContent` complètes.
+Le même endpoint fournit aussi **AgentVegan Kitchen**, une [MCP App](https://modelcontextprotocol.io/extensions/apps/overview) interactive : galerie visuelle, fiche recette complète et cockpit cuisine plein écran. Un client sans support MCP Apps continue de recevoir les réponses texte et `structuredContent` complètes.
 
 Le code est sous licence MIT. Les données conservent leurs droits et licences source par source ; il n’existe aucune licence globale appliquée aux recettes, marques, fiches commerciales ou images.
 
@@ -25,8 +25,9 @@ Le plugin AgentVegan utilise le bridge MCP Apps standard, également implément�
 
 Parcours visuels disponibles :
 
-- galerie paginée de 3 à 8 recettes avec photos ;
-- fiche recette avec image principale, ingrédients, nutrition et étapes illustrées ;
+- galerie paginée de 3 à 8 recettes avec photos, durée, portions, nombre d’étapes et nutriments clés ;
+- fiche recette avec image principale, checklist d’ingrédients, les 16 nutriments prioritaires et le film complet des étapes ;
+- cockpit cuisine plein écran avec une grande image par étape, instruction exacte, ingrédients visibles, minuteur, contrôle de fin, pièges et boutons précédent/suivant ;
 - galerie de produits avec disponibilité et date de vérification ;
 - comparaison nutritionnelle interactive sur `100_g`, `portion` ou `recette` ;
 - fiche ingrédient avec recettes associées, magasins et substitutions.
@@ -67,7 +68,7 @@ Le Worker ne lit jamais la plateforme personnelle, ses sessions commerçantes, s
 
 Les huit entités publiques sont `Recipe`, `Ingredient`, `Nutrient`, `Retailer`, `AvailabilityEvidence`, `SubstitutionRule`, `PlantProduct` et `SourceReference`. Chaque réponse API et outil MCP suit le contrat : `dataset_version`, `data`, `next_cursor`, `sources`, `coverage_warnings`, `checked_at`. Les listes sont limitées à 50 éléments.
 
-La version actuelle contient 431 recettes, 545 ingrédients canoniques, 21 nutriments, 30 enseignes, 14 756 preuves, 53 substitutions et 517 produits végétaux. Ces minima sont contrôlés par le build ; une perte de couverture bloque la publication.
+La version actuelle contient 431 recettes, 1 949 étapes illustrées, 2 380 images de recette, 16 nutriments prioritaires par recette, 545 ingrédients canoniques, 21 nutriments, 30 enseignes, 14 756 preuves, 53 substitutions et 517 produits végétaux. Ces minima sont contrôlés par le build ; une perte de couverture bloque la publication.
 
 ## Développement
 
@@ -79,12 +80,13 @@ npm run data:sync
 npm test
 ```
 
-Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils de données et les cinq outils de rendu sont annotés lecture seule, non destructifs et idempotents. Les cinq ressources `ui://agentvegan/.../v1.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt.
+Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils publics et les cinq points d’entrée visuels sont annotés lecture seule, non destructifs et idempotents. Les quatre ressources `ui://agentvegan/.../v2.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. `search_recipes` et `get_recipe` déclarent eux-mêmes AgentVegan Kitchen afin que l’interface s’affiche même si l’hôte choisit directement l’outil de données ; les outils `explore_*` et `cook_recipe` rendent le parcours visuel explicite. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt.
 
 Le bundle UI est produit en fichier unique et embarqué dans le serveur :
 
 ```bash
 npm run build:ui
+npm run test:kitchen
 npm test
 ```
 

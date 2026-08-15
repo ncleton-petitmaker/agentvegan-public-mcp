@@ -27,7 +27,67 @@ const PUBLIC_ENTITIES = new Set<PublicEntity>([
   "source-reference",
 ]);
 
-function recipeSummary(recipe: Recipe): JsonObject {
+function publicRecipeImage(value: unknown, context: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new PublicDataError("DATASET_UNAVAILABLE", `Image publique manquante pour ${context}.`, 503);
+  }
+  let url: URL;
+  try {
+    url = new URL(value, "https://agentvegan.org");
+  } catch {
+    throw new PublicDataError("DATASET_UNAVAILABLE", `URL d’image invalide pour ${context}.`, 503);
+  }
+  if (url.protocol !== "https:" || url.origin !== "https://agentvegan.org") {
+    throw new PublicDataError("DATASET_UNAVAILABLE", `L’image de ${context} ne provient pas du domaine public AgentVegan.`, 503);
+  }
+  return url.href;
+}
+
+function recipeWithPublicMedia(recipe: Recipe): Recipe {
+  const guide = recipe.guide && typeof recipe.guide === "object" && !Array.isArray(recipe.guide)
+    ? recipe.guide
+    : null;
+  if (!guide || !Array.isArray(guide.steps) || !guide.steps.length) {
+    throw new PublicDataError("DATASET_UNAVAILABLE", `Le guide de la recette ${recipe.id} est absent ou vide.`, 503);
+  }
+  const steps = guide.steps.map((candidate, index) => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new PublicDataError("DATASET_UNAVAILABLE", `L’étape ${index + 1} de ${recipe.id} est invalide.`, 503);
+    }
+    const step = candidate as JsonObject;
+    const instruction = typeof step.beginner_instruction === "string" && step.beginner_instruction.trim()
+      ? step.beginner_instruction
+      : typeof step.short_instruction === "string" && step.short_instruction.trim()
+        ? step.short_instruction
+        : null;
+    if (!instruction) {
+      throw new PublicDataError("DATASET_UNAVAILABLE", `L’étape ${index + 1} de ${recipe.id} ne contient aucune instruction publique.`, 503);
+    }
+    if (typeof step.image_alt !== "string" || !step.image_alt.trim()) {
+      throw new PublicDataError("DATASET_UNAVAILABLE", `L’étape ${index + 1} de ${recipe.id} ne contient aucun texte alternatif public.`, 503);
+    }
+    if (typeof step.duration_minutes !== "number" || !Number.isFinite(step.duration_minutes) || step.duration_minutes < 0) {
+      throw new PublicDataError("DATASET_UNAVAILABLE", `L’étape ${index + 1} de ${recipe.id} ne contient aucune durée publique valide.`, 503);
+    }
+    return {
+      ...step,
+      image: publicRecipeImage(step.image, `l’étape ${index + 1} de ${recipe.id}`),
+    };
+  });
+  if (recipe.nutrition?.basis !== "par_portion" || !Array.isArray(recipe.nutrition.priority_scores) || recipe.nutrition.priority_scores.length < 16) {
+    throw new PublicDataError("DATASET_UNAVAILABLE", `La nutrition par portion de ${recipe.id} est absente ou incomplète.`, 503);
+  }
+  return {
+    ...recipe,
+    image_url: publicRecipeImage(recipe.image_url, `la recette ${recipe.id}`),
+    servings_count: numericServings(recipe.servings),
+    step_count: steps.length,
+    guide: { ...guide, steps },
+  };
+}
+
+function recipeSummary(source: Recipe): JsonObject {
+  const recipe = recipeWithPublicMedia(source);
   return {
     id: recipe.id,
     slug: recipe.slug,
@@ -36,6 +96,8 @@ function recipeSummary(recipe: Recipe): JsonObject {
     meal: recipe.meal ?? null,
     prep_minutes: recipe.prep_minutes ?? null,
     servings: recipe.servings ?? null,
+    servings_count: recipe.servings_count ?? null,
+    step_count: recipe.step_count ?? null,
     image_url: recipe.image_url ?? null,
     url: recipe.url,
     ingredients: recipe.ingredients.map((item) => ({
@@ -91,7 +153,8 @@ function sourceIdsIn(value: unknown, output = new Set<string>()): Set<string> {
 
 function numericServings(value: string | null | undefined): number | null {
   if (!value) return null;
-  const match = value.match(/^\s*(\d+(?:[.,]\d+)?)/u);
+  const match = value.match(/^\s*(\d+(?:[.,]\d+)?)/u)
+    ?? value.match(/\b(?:portions?|personnes?)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/iu);
   if (!match?.[1]) return null;
   const amount = Number(match[1].replace(",", "."));
   return Number.isFinite(amount) && amount > 0 ? amount : null;
@@ -198,10 +261,11 @@ export class PublicDataService {
     await this.manifest();
     const recipe = await this.repository.getRecipe(id);
     if (!recipe) throw new PublicDataError("NOT_FOUND", `Recette introuvable : ${id}.`, 404);
-    const warnings = (recipe.nutrition?.priority_scores as Array<Record<string, unknown>> | undefined)?.some((item) => item.status === "sourced_lower_bound")
+    const publicRecipe = recipeWithPublicMedia(recipe);
+    const warnings = (publicRecipe.nutrition?.priority_scores as Array<Record<string, unknown>> | undefined)?.some((item) => item.status === "sourced_lower_bound")
       ? ["Certaines valeurs nutritionnelles sont des minimums sourcés et restent explicitement marquées comme telles."]
       : [];
-    return this.envelope(recipe, null, warnings, [SOURCE_RECIPES]);
+    return this.envelope(publicRecipe, null, warnings, [SOURCE_RECIPES]);
   }
 
   async searchIngredients(input: { query?: string | undefined; limit?: number | undefined; cursor?: string | undefined }): Promise<PublicResponse> {
