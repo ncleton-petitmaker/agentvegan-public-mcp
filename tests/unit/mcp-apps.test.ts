@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nutritionComparisonForUi, productCardForUi, recipeCardForUi, recipeDetailForUi } from "../../src/mcp-apps.js";
+import { nutritionComparisonForUi, productCardForUi, recipeCardForUi, recipeDetailForUi, recipeGalleryItemForUi } from "../../src/mcp-apps.js";
 import { MCP_APP_HTML } from "../../src/generated/mcp-app-html.js";
 
 describe("projection MCP Apps", () => {
@@ -47,9 +47,32 @@ describe("projection MCP Apps", () => {
     expect(() => recipeDetailForUi({ ...base, guide: { steps: [{ id: "s", beginner_instruction: "Cuire." }] } })).toThrow(/Image publique/u);
   });
 
-  it("ne conserve dans les cartes que les URL distantes et métadonnées utiles", () => {
-    expect(recipeCardForUi({ id: "r", slug: "r", title: "R", image_url: "https://agentvegan.org/r.webp", servings_count: 4, step_count: 6, nutrition: { priority_scores: [] } })).toMatchObject({ id: "r", image_url: "https://agentvegan.org/r.webp", servings_count: 4, step_count: 6, nutrition: [] });
+  it("limite les cartes aux informations de choix et réserve la nutrition à la fiche", () => {
+    const card = recipeCardForUi({ id: "r", slug: "r", title: "R", subtitle: "Source web", meal: "Bibliothèque PDF", image_url: "https://agentvegan.org/r.webp", servings_count: 4, step_count: 6, nutrition: { priority_scores: [] } });
+    expect(card).toMatchObject({ id: "r", image_url: "https://agentvegan.org/r.webp", step_count: 6 });
+    expect(card).not.toHaveProperty("subtitle");
+    expect(card).not.toHaveProperty("meal");
+    expect(card).not.toHaveProperty("nutrition");
     expect(productCardForUi({ id: "p", name: "P", image_url: "https://cdn.greenweez.com/p.webp", offers: [] })).toMatchObject({ id: "p", image_url: "https://cdn.greenweez.com/p.webp", offers: [] });
+  });
+
+  it("cache la nutrition derrière une commande explicite dans la fiche recette", () => {
+    expect(MCP_APP_HTML).toContain("Afficher la nutrition");
+    expect(MCP_APP_HTML).toContain("Masquer la nutrition");
+    expect(MCP_APP_HTML).not.toContain("sources-panel");
+  });
+
+  it("embarque la fiche complète dans chaque carte interactive", () => {
+    const item = recipeGalleryItemForUi({
+      id: "r",
+      slug: "r",
+      title: "R",
+      image_url: "https://agentvegan.org/r.webp",
+      ingredients: [],
+      guide: { steps: [{ id: "s", beginner_instruction: "Cuire.", image: "/_agentvegan/photos/s.webp", image_alt: "Cuisson" }] },
+      nutrition: { priority_scores: [] },
+    });
+    expect(item).toMatchObject({ id: "r", detail: { id: "r", guide: { steps: [{ beginner_instruction: "Cuire." }] } } });
   });
 
   it("uniformise les nutriments ingrédients et recettes sans inventer de valeurs", () => {

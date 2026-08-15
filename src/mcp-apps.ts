@@ -4,10 +4,10 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v8.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v8.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v8.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v8.html",
+  kitchen: "ui://agentvegan/kitchen/v12.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v12.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v12.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v12.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -114,21 +114,21 @@ export function recipeCardForUi(value: unknown): JsonObject {
   if (!recipe || typeof recipe.id !== "string" || typeof recipe.title !== "string" || typeof recipe.slug !== "string") {
     throw new Error("Une carte recette ne respecte pas le contrat requis par l’interface MCP Apps.");
   }
-  const nutrition = record(recipe.nutrition);
-  const directScores = Array.isArray(recipe.nutrition) ? recipe.nutrition : nutrition?.priority_scores;
   return {
     id: recipe.id,
     slug: recipe.slug,
     title: recipe.title,
-    subtitle: stringOrNull(recipe.subtitle),
-    meal: stringOrNull(recipe.meal),
     prep_minutes: numberOrNull(recipe.prep_minutes),
-    servings: stringOrNull(recipe.servings),
     image_url: requiredRecipeImage(recipe.image_url, `la recette ${recipe.id}`),
     url: stringOrNull(recipe.url),
-    servings_count: numberOrNull(recipe.servings_count),
     step_count: numberOrNull(recipe.step_count),
-    nutrition: array(directScores) as JsonValue[],
+  };
+}
+
+export function recipeGalleryItemForUi(value: unknown): JsonObject {
+  return {
+    ...recipeCardForUi(value),
+    detail: recipeDetailForUi(value),
   };
 }
 

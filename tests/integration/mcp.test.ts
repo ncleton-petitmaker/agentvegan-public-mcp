@@ -37,7 +37,7 @@ describe("MCP officiel", () => {
       ]);
       expect(tools.tools.every((tool) => tool.annotations?.readOnlyHint === true && tool.annotations.destructiveHint === false)).toBe(true);
       const appTools = tools.tools.filter((tool) => typeof (tool._meta?.ui as { resourceUri?: unknown } | undefined)?.resourceUri === "string");
-      expect(appTools.map((tool) => tool.name).sort()).toEqual(["compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "get_recipe", "search_recipes"]);
+      expect(appTools.map((tool) => tool.name).sort()).toEqual(["compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "get_recipe"]);
       expect(appTools.every((tool) => typeof tool._meta?.["ui/resourceUri"] === "string" && typeof tool._meta?.["openai/outputTemplate"] === "string")).toBe(true);
 
       const result = await client.callTool({ name: "find_substitutes", arguments: { ingredient: "oeuf" } });
@@ -51,6 +51,8 @@ describe("MCP officiel", () => {
       const gallery = await client.callTool({ name: "explore_recipes", arguments: { limit: 3 } });
       expect(gallery.isError).not.toBe(true);
       expect(gallery.structuredContent).toMatchObject({ data: { view: "recipe_gallery", items: expect.any(Array), next_cursor: expect.any(String) } });
+      const galleryItems = (gallery.structuredContent as { data: { items: Array<{ detail?: { guide?: { steps?: unknown[] } } }> } }).data.items;
+      expect(galleryItems.every((item) => (item.detail?.guide?.steps?.length ?? 0) > 0)).toBe(true);
       const genericGallery = await client.callTool({ name: "explore_recipes", arguments: { query: "propose-moi 6 recettes vegan", limit: 6 } });
       expect(genericGallery.isError).not.toBe(true);
       expect(genericGallery.structuredContent).toMatchObject({ data: { view: "recipe_gallery", items: expect.arrayContaining([expect.objectContaining({ image_url: expect.stringContaining("https://agentvegan.org/") })]) } });
@@ -84,7 +86,7 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v8.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v12.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");

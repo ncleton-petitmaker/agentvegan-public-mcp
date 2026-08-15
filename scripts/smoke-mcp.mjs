@@ -4,14 +4,14 @@ import { loadLocalService } from "../dist/src/local.js";
 
 const service = await loadLocalService();
 const server = createAgentVeganMcp(service);
-const client = new Client({ name: "agentvegan-smoke", version: "2.0.6" });
+const client = new Client({ name: "agentvegan-smoke", version: "2.0.10" });
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 try {
   const tools = await client.listTools();
   if (tools.tools.length !== 14) throw new Error(`14 outils attendus, ${tools.tools.length} reçus.`);
   const appTools = tools.tools.filter((tool) => typeof tool._meta?.ui?.resourceUri === "string");
-  if (appTools.length !== 7) throw new Error(`7 points d’entrée MCP Apps attendus, ${appTools.length} reçus.`);
+  if (appTools.length !== 6) throw new Error(`6 points d’entrée MCP Apps attendus, ${appTools.length} reçus.`);
   if (appTools.some((tool) => typeof tool._meta?.["ui/resourceUri"] !== "string" || typeof tool._meta?.["openai/outputTemplate"] !== "string")) {
     throw new Error("Les métadonnées MCP Apps standard et ChatGPT sont incomplètes.");
   }
@@ -19,7 +19,7 @@ try {
   if (result.isError || !result.structuredContent?.dataset_version) throw new Error("L’appel MCP compare_nutrition a échoué.");
   const resource = await client.readResource({ uri: "agentvegan://catalog/manifest" });
   if (!resource.contents.length) throw new Error("La ressource manifeste MCP est vide.");
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v8.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v12.html" });
   if (ui.contents[0]?.mimeType !== "text/html;profile=mcp-app" || !("text" in ui.contents[0]) || !ui.contents[0].text.includes("Agent Vegan")) {
     throw new Error("La ressource MCP Apps n’est pas disponible ou possède un MIME invalide.");
   }

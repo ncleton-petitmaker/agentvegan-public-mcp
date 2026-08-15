@@ -112,6 +112,10 @@ const RecipeDetailSchema = RecipeCardSchema.extend({
   }).passthrough(),
 }).passthrough();
 
+const RecipeGalleryItemSchema = RecipeCardSchema.extend({
+  detail: RecipeDetailSchema,
+}).passthrough();
+
 const OfferSchema = z.object({
   retailer_id: z.string(),
   availability: optionalString,
@@ -173,7 +177,7 @@ const EnvelopeSchema = z.object({
 
 const RecipeGalleryDataSchema = z.object({
   view: z.literal("recipe_gallery"),
-  items: z.array(RecipeCardSchema).min(1).max(8),
+  items: z.array(RecipeGalleryItemSchema).min(1).max(8),
   search: z.record(z.string(), z.unknown()),
   next_cursor: z.string().nullable(),
 }).passthrough();
@@ -204,6 +208,7 @@ const IngredientDataSchema = z.object({
 type Envelope = z.infer<typeof EnvelopeSchema>;
 type RecipeCard = z.infer<typeof RecipeCardSchema>;
 type RecipeDetail = z.infer<typeof RecipeDetailSchema>;
+type RecipeGalleryItem = z.infer<typeof RecipeGalleryItemSchema>;
 type ProductCard = z.infer<typeof ProductCardSchema>;
 type ComparisonSeries = z.infer<typeof ComparisonSeriesSchema>;
 type Ingredient = z.infer<typeof IngredientSchema>;
@@ -219,6 +224,7 @@ interface OpenAiExtensions {
   toolResponseMetadata?: unknown;
   widgetState?: unknown;
   setWidgetState?: (state: Record<string, unknown>) => Promise<void> | void;
+  callTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 }
 
 declare global {
@@ -230,7 +236,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.6" },
+  { name: "Agent Vegan", version: "2.0.10" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -238,7 +244,7 @@ const app = new App(
 let connected = false;
 let currentEnvelope: Envelope | null = null;
 let savedGallery: (() => void) | null = null;
-let recipePages: GalleryPage<RecipeCard>[] = [];
+let recipePages: GalleryPage<RecipeGalleryItem>[] = [];
 let productPages: GalleryPage<ProductCard>[] = [];
 let recipeSearch: Record<string, unknown> = {};
 let productSearch: Record<string, unknown> = {};
@@ -336,7 +342,6 @@ function appendEnvelopeFooter(container: HTMLElement, envelope: Envelope): void 
     for (const warning of envelope.coverage_warnings) warnings.append(element("p", "", warning));
     container.append(warnings);
   }
-  container.append(element("p", "meta", `Catalogue ${envelope.dataset_version} · vérifié le ${formatDate(envelope.checked_at)}`));
 }
 
 function nutrientAmount(score: z.infer<typeof NutrientScoreSchema>): string | null {
@@ -348,36 +353,21 @@ function nutrientAmount(score: z.infer<typeof NutrientScoreSchema>): string | nu
   return `${formatNumber(minimum)} ${score.unit}`;
 }
 
-function recipeNutrientChips(recipe: RecipeCard | RecipeDetail, limit = 3): HTMLElement {
-  const chips = element("div", "chips");
-  const scores = Array.isArray(recipe.nutrition)
-    ? recipe.nutrition
-    : recipe.nutrition?.priority_scores ?? [];
-  const preferred = ["protein_g", "iron_mg", "fiber_g", "calcium_mg"];
-  const ordered = [...scores].sort((left, right) => {
-    const leftRank = preferred.indexOf(left.key);
-    const rightRank = preferred.indexOf(right.key);
-    return (leftRank < 0 ? preferred.length : leftRank) - (rightRank < 0 ? preferred.length : rightRank);
-  });
-  for (const score of ordered) {
-    const amount = nutrientAmount(score);
-    if (!amount) continue;
-    chips.append(element("span", "chip", `${score.label} · ${amount}`));
-    if (chips.childElementCount >= limit) break;
-  }
-  return chips;
-}
-
 async function callTool(name: string, args: Record<string, unknown>): Promise<Envelope> {
-  if (!connected || !app.getHostCapabilities()?.serverTools) {
+  const openAiCallTool = window.openai?.callTool;
+  if (typeof openAiCallTool !== "function" && (!connected || !app.getHostCapabilities()?.serverTools)) {
     throw new Error("Cet hôte n’autorise pas encore l’interface à appeler les outils MCP.");
   }
-  const result = await app.callServerTool({ name, arguments: args });
-  if (result.isError) {
-    const text = result.content?.find((item) => item.type === "text");
-    throw new Error(text && "text" in text ? text.text : `L’outil ${name} a échoué.`);
+  const result = typeof openAiCallTool === "function"
+    ? await openAiCallTool(name, args)
+    : await app.callServerTool({ name, arguments: args });
+  if (result && typeof result === "object" && "isError" in result && result.isError) {
+    const typedResult = result as { content?: Array<{ type?: string; text?: string }> };
+    const text = typedResult.content?.find((item) => item.type === "text");
+    throw new Error(text?.text ?? `L’outil ${name} a échoué.`);
   }
-  for (const candidate of toolResultPayloadCandidates(result)) {
+  if (!result || typeof result !== "object") throw new Error(`La réponse de ${name} est invalide.`);
+  for (const candidate of toolResultPayloadCandidates(result as { structuredContent?: unknown; content?: unknown })) {
     const parsed = EnvelopeSchema.safeParse(candidate);
     if (parsed.success) return parsed.data;
   }
@@ -394,14 +384,20 @@ async function openExternal(url: string | null | undefined): Promise<void> {
 
 async function requestFullscreen(): Promise<void> {
   const context = app.getHostContext();
+  if (context?.platform === "mobile") return;
   if (!context?.availableDisplayModes?.includes("fullscreen")) return;
   await app.requestDisplayMode({ mode: "fullscreen" });
 }
 
 function addFullscreenAction(actions: HTMLElement): void {
-  if (app.getHostContext()?.availableDisplayModes?.includes("fullscreen")) {
+  const context = app.getHostContext();
+  if (context?.platform !== "mobile" && context?.availableDisplayModes?.includes("fullscreen")) {
     actions.append(button("Agrandir", requestFullscreen));
   }
+}
+
+function requestFullscreenInBackground(): void {
+  void requestFullscreen().catch(() => undefined);
 }
 
 function persistChatGptState(state: Record<string, unknown>): void {
@@ -411,47 +407,55 @@ function persistChatGptState(state: Record<string, unknown>): void {
   }
 }
 
-async function showRecipe(recipeId: string, startCooking = false): Promise<void> {
+async function showRecipe(recipeId: string, startCooking = false, embeddedRecipe?: RecipeDetail): Promise<void> {
   try {
-    const envelope = await callTool("get_recipe", { id: recipeId });
-    const recipe = RecipeDetailSchema.safeParse(envelope.data);
-    if (!recipe.success) throw new Error("La fiche recette reçue est invalide.");
+    let envelope: Envelope;
+    let recipe: RecipeDetail;
+    if (embeddedRecipe) {
+      if (!currentEnvelope) throw new Error("Le contexte public de la galerie est absent.");
+      envelope = currentEnvelope;
+      recipe = embeddedRecipe;
+    } else {
+      envelope = await callTool("get_recipe", { id: recipeId });
+      const parsed = RecipeDetailSchema.safeParse(envelope.data);
+      if (!parsed.success) throw new Error("La fiche recette reçue est invalide.");
+      recipe = parsed.data;
+    }
     currentEnvelope = envelope;
     persistChatGptState({ selected_recipe_id: recipeId });
-    if (app.getHostCapabilities()?.updateModelContext) {
-      await app.updateModelContext({
-        content: [{ type: "text", text: `Recette AgentVegan sélectionnée : ${recipe.data.title} (${recipe.data.id}).` }],
-        structuredContent: { selected_recipe_id: recipe.data.id, selected_recipe_title: recipe.data.title },
-      });
-    }
     if (startCooking) {
-      await requestFullscreen();
-      renderCookMode(recipe.data, envelope, 0);
+      renderCookMode(recipe, envelope, 0);
+      requestFullscreenInBackground();
     } else {
-      renderRecipeDetail(recipe.data, envelope);
+      renderRecipeDetail(recipe, envelope);
+    }
+    if (app.getHostCapabilities()?.updateModelContext) {
+      void app.updateModelContext({
+        content: [{ type: "text", text: `Recette AgentVegan sélectionnée : ${recipe.title} (${recipe.id}).` }],
+        structuredContent: { selected_recipe_id: recipe.id, selected_recipe_title: recipe.title },
+      }).catch(() => undefined);
     }
   } catch (error) {
     showError(error instanceof Error ? error.message : "Impossible d’ouvrir la recette.");
   }
 }
 
-function recipeCard(recipe: RecipeCard): HTMLElement {
+function recipeCard(recipe: RecipeCard | RecipeGalleryItem): HTMLElement {
+  const embedded = RecipeGalleryItemSchema.safeParse(recipe);
+  const detail = embedded.success ? embedded.data.detail : undefined;
   const card = element("article", "card");
   card.append(imageMedia(recipe.image_url, `Photo du plat : ${recipe.title}`));
   const body = element("div", "card-body");
   body.append(element("h3", "", recipe.title));
-  if (recipe.subtitle) body.append(element("p", "meta", recipe.subtitle));
   const facts = element("div", "chips");
   if (recipe.prep_minutes !== null && recipe.prep_minutes !== undefined) facts.append(element("span", "chip good", `${formatNumber(recipe.prep_minutes, 0)} min`));
   if (recipe.step_count !== null && recipe.step_count !== undefined) facts.append(element("span", "chip", `${formatNumber(recipe.step_count, 0)} étapes`));
-  if (recipe.servings_count !== null && recipe.servings_count !== undefined) facts.append(element("span", "chip", `${formatNumber(recipe.servings_count, 0)} portions`));
-  if (recipe.meal) facts.append(element("span", "chip", recipe.meal));
   const cardActions = element("div", "card-actions");
   cardActions.append(
-    button("Découvrir", () => showRecipe(recipe.id)),
-    button("Cuisiner", () => showRecipe(recipe.id, true), "primary"),
+    button("Découvrir", () => showRecipe(recipe.id, false, detail)),
+    button("Cuisiner", () => showRecipe(recipe.id, true, detail), "primary"),
   );
-  body.append(facts, recipeNutrientChips(recipe), cardActions);
+  body.append(facts, cardActions);
   card.append(body);
   return card;
 }
@@ -475,10 +479,10 @@ function renderRecipeGalleryPage(pageIndex: number, envelope: Envelope): void {
     if (!page.nextCursor) return;
     next.disabled = true;
     try {
-      const response = await callTool("search_recipes", { ...recipeSearch, limit: 8, cursor: page.nextCursor });
-      const items = z.array(RecipeCardSchema).safeParse(response.data);
-      if (!items.success || !items.data.length) throw new Error("La page suivante de recettes est vide ou invalide.");
-      recipePages.push({ items: items.data, nextCursor: response.next_cursor });
+      const response = await callTool("explore_recipes", { ...recipeSearch, limit: 8, cursor: page.nextCursor });
+      const data = RecipeGalleryDataSchema.safeParse(response.data);
+      if (!data.success || !data.data.items.length) throw new Error("La page suivante de recettes est vide ou invalide.");
+      recipePages.push({ items: data.data.items, nextCursor: data.data.next_cursor });
       currentEnvelope = response;
       renderRecipeGalleryPage(pageIndex + 1, response);
     } catch (error) {
@@ -504,7 +508,6 @@ function recipeFacts(recipe: RecipeDetail | RecipeCard): HTMLElement {
   if (recipe.prep_minutes !== null && recipe.prep_minutes !== undefined) facts.append(element("span", "fact", `⏱ ${formatNumber(recipe.prep_minutes, 0)} min`));
   if (recipe.step_count !== null && recipe.step_count !== undefined) facts.append(element("span", "fact", `◉ ${formatNumber(recipe.step_count, 0)} étapes`));
   if (recipe.servings_count !== null && recipe.servings_count !== undefined) facts.append(element("span", "fact", `♨ ${formatNumber(recipe.servings_count, 0)} portions`));
-  if (recipe.meal) facts.append(element("span", "fact", recipe.meal));
   return facts;
 }
 
@@ -550,21 +553,24 @@ function nutritionPanel(recipe: RecipeDetail): HTMLElement {
   return panel;
 }
 
-function sourcesPanel(envelope: Envelope): HTMLElement {
-  const details = element("details", "sources-panel");
-  const summary = element("summary", "", `${envelope.sources.length} source${envelope.sources.length > 1 ? "s" : ""} et provenance`);
-  details.append(summary);
-  const list = element("div", "source-list");
-  for (const source of envelope.sources) {
-    const row = element("div", "source-row");
-    row.append(element("span", "", source.label));
-    row.append(button("Consulter", async () => {
-      try { await openExternal(source.url); } catch (error) { showError(error instanceof Error ? error.message : "Source impossible à ouvrir."); }
-    }));
-    list.append(row);
-  }
-  details.append(list);
-  return details;
+function nutritionToggle(recipe: RecipeDetail): HTMLElement {
+  const section = element("section", "nutrition-toggle");
+  const content = nutritionPanel(recipe);
+  content.id = `nutrition-${recipe.id.replace(/[^a-zA-Z0-9_-]/gu, "-")}`;
+  content.hidden = true;
+  const toggle = button("Afficher la nutrition", () => {
+    const expanded = content.hidden;
+    content.hidden = !expanded;
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "Masquer la nutrition" : "Afficher la nutrition";
+  });
+  toggle.classList.add("nutrition-toggle-button");
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-controls", content.id);
+  const heading = element("div", "nutrition-toggle-heading");
+  heading.append(element("div", "", "Nutrition"), toggle);
+  section.append(heading, content);
+  return section;
 }
 
 function visibleIngredientsForStep(recipe: RecipeDetail, step: z.infer<typeof RecipeStepSchema>): string[] {
@@ -722,11 +728,10 @@ function renderRecipeDetail(recipe: RecipeDetail, envelope: Envelope): void {
   const hero = imageMedia(recipe.image_url, `Photo du plat terminé : ${recipe.title}`, "eager");
   hero.className = "hero";
   const heroCopy = element("div", "hero-copy");
-  if (recipe.subtitle) heroCopy.append(element("p", "hero-subtitle", recipe.subtitle));
   heroCopy.append(recipeFacts(recipe));
   const start = button(`Commencer · ${recipe.guide.steps.length} étapes`, async () => {
-    await requestFullscreen();
     renderCookMode(recipe, envelope, 0);
+    requestFullscreenInBackground();
   }, "primary start-cooking");
   heroCopy.append(start);
   heroStage.append(hero, heroCopy);
@@ -738,8 +743,8 @@ function renderRecipeDetail(recipe: RecipeDetail, envelope: Envelope): void {
     view.content.append(intro);
   }
 
-  const overview = element("div", "detail-grid");
-  overview.append(ingredientChecklist(recipe), nutritionPanel(recipe));
+  const overview = element("div", "detail-stack");
+  overview.append(ingredientChecklist(recipe), nutritionToggle(recipe));
   view.content.append(overview);
 
   const stepsSection = element("section", "step-library");
@@ -756,14 +761,14 @@ function renderRecipeDetail(recipe: RecipeDetail, envelope: Envelope): void {
     copy.append(element("p", "step-number", `Étape ${step.order}${step.duration_minutes ? ` · ${formatNumber(step.duration_minutes, 0)} min` : ""}`));
     copy.append(element("h3", "", step.title), element("p", "", step.beginner_instruction));
     copy.append(button("Ouvrir cette étape", async () => {
-      await requestFullscreen();
       renderCookMode(recipe, envelope, index);
+      requestFullscreenInBackground();
     }));
     card.append(media, copy);
     steps.append(card);
   });
   stepsSection.append(steps);
-  view.content.append(stepsSection, sourcesPanel(envelope));
+  view.content.append(stepsSection);
 
   if (recipe.url) {
     const actions = element("div", "actions footer-actions");
@@ -999,15 +1004,6 @@ function handleToolResult(value: unknown): void {
   currentEnvelope = envelope.data;
   const data = envelope.data.data;
 
-  const rawRecipeGallery = z.array(RecipeCardSchema).min(1).max(50).safeParse(data);
-  if (rawRecipeGallery.success) {
-    return renderRecipeGallery({
-      view: "recipe_gallery",
-      items: rawRecipeGallery.data.slice(0, 8),
-      search: {},
-      next_cursor: envelope.data.next_cursor,
-    }, envelope.data);
-  }
   const rawRecipeDetail = RecipeDetailSchema.safeParse(data);
   if (rawRecipeDetail.success) return renderRecipeDetail(rawRecipeDetail.data, envelope.data);
 
@@ -1087,6 +1083,7 @@ function applyHostContext(): void {
   const context = app.getHostContext();
   document.documentElement.dataset.theme = context?.theme === "dark" ? "dark" : "light";
   document.documentElement.dataset.displayMode = context?.displayMode ?? "inline";
+  document.documentElement.dataset.platform = context?.platform ?? "unknown";
   document.documentElement.lang = canonicalLocale(context?.locale ?? document.documentElement.lang);
 }
 

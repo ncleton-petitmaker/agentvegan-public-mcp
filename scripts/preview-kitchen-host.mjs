@@ -11,7 +11,20 @@ async function api(path) {
   return response.json();
 }
 
-const initialResult = await api("/recipes?limit=6");
+const initialSearch = await api("/recipes?limit=6");
+const initialItems = await Promise.all(initialSearch.data.map(async (recipe) => ({
+  ...recipe,
+  detail: (await api(`/recipes/${encodeURIComponent(recipe.id)}`)).data,
+})));
+const initialResult = {
+  ...initialSearch,
+  data: {
+    view: "recipe_gallery",
+    items: initialItems,
+    search: { limit: 6 },
+    next_cursor: initialSearch.next_cursor,
+  },
+};
 
 function json(value) {
   return JSON.stringify(value).replaceAll("<", "\\u003c");
@@ -29,7 +42,7 @@ const hostHtml = `<!doctype html>
 </head>
 <body>
   <main class="host">
-    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.6</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
+    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.10</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
     <iframe id="app" class="frame" title="Agent Vegan" src="/app" sandbox="allow-scripts"></iframe>
   </main>
   <script>
@@ -69,7 +82,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/initialize") {
           send({ jsonrpc: "2.0", id: message.id, result: {
             protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.6" },
+            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.10" },
             hostCapabilities: {
               openLinks: {},
               serverTools: {},
@@ -82,8 +95,10 @@ const hostHtml = `<!doctype html>
               containerDimensions: { width: 1400, maxHeight: 820 },
               locale: "fr_FR",
               timeZone: "Europe/Paris",
-              platform: "web",
-              deviceCapabilities: { touch: false, hover: true },
+              platform: new URLSearchParams(location.search).has("mobile") ? "mobile" : "web",
+              deviceCapabilities: new URLSearchParams(location.search).has("mobile")
+                ? { touch: true, hover: false }
+                : { touch: false, hover: true },
             },
           }});
           return;

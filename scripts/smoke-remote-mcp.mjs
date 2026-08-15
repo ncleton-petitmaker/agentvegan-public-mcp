@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.6" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.10" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -13,7 +13,7 @@ try {
   const tools = await client.listTools();
   if (tools.tools.length !== 14) throw new Error(`14 outils attendus en production, ${tools.tools.length} reçus.`);
   const appTools = tools.tools.filter((tool) => typeof tool._meta?.ui?.resourceUri === "string");
-  if (appTools.length !== 7 || appTools.some((tool) => typeof tool._meta?.["ui/resourceUri"] !== "string" || typeof tool._meta?.["openai/outputTemplate"] !== "string")) {
+  if (appTools.length !== 6 || appTools.some((tool) => typeof tool._meta?.["ui/resourceUri"] !== "string" || typeof tool._meta?.["openai/outputTemplate"] !== "string")) {
     throw new Error("Les points d’entrée UI ne déclarent pas correctement leurs ressources MCP Apps et ChatGPT.");
   }
 
@@ -41,7 +41,7 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v8.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v12.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");

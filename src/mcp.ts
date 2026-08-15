@@ -10,6 +10,7 @@ import {
   productCardForUi,
   recipeCardForUi,
   recipeDetailForUi,
+  recipeGalleryItemForUi,
   registerAgentVeganMcpAppResources,
   viewEnvelope,
 } from "./mcp-apps.js";
@@ -66,7 +67,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.6",
+    version: "2.0.10",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -78,9 +79,8 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("search_recipes", {
     title: "Rechercher des recettes véganes",
-    description: "Recherche les recettes véganes publiques. Dans un hôte compatible MCP Apps, affiche directement une galerie Agent Vegan illustrée ; pour un parcours visuel explicitement demandé, explore_recipes fournit la même expérience optimisée.",
+    description: "Recherche les recettes véganes publiques et renvoie leurs identifiants et métadonnées. Pour proposer, découvrir ou choisir visuellement des recettes, utilisez explore_recipes afin d’afficher la galerie Agent Vegan complète.",
     annotations,
-    _meta: uiMeta(MCP_APP_URIS.kitchen, "Recherche de recettes illustrées…", "Recettes prêtes"),
     inputSchema: z.object({
       query: z.string().min(1).optional().describe("Texte libre, par exemple crêpes ou curry."),
       ingredients: z.array(z.string().min(1)).max(10).optional().describe("Tous les ingrédients demandés doivent être présents."),
@@ -192,15 +192,26 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     if (!Array.isArray(response.data) || !response.data.length) {
       throw new PublicDataError("NOT_FOUND", "Aucune recette ne correspond à cette recherche. Modifiez les critères culinaires demandés.", 404);
     }
-    const items = response.data.map((recipe) => recipeCardForUi(recipe));
+    const detailResponses = await Promise.all(response.data.map(async (recipe) => {
+      const card = recipeCardForUi(recipe);
+      return service.getRecipe(String(card.id));
+    }));
+    const items = detailResponses.map((detail) => recipeGalleryItemForUi(detail.data));
+    const galleryResponse = {
+      ...response,
+      coverage_warnings: [...new Set([
+        ...response.coverage_warnings,
+        ...detailResponses.flatMap((detail) => detail.coverage_warnings),
+      ])],
+    };
     const search = { ...searchInput } as JsonObject;
     delete search.cursor;
-    return viewEnvelope(response, {
+    return viewEnvelope(galleryResponse, {
       view: "recipe_gallery",
       items,
       search,
       next_cursor: response.next_cursor,
-    }, response.next_cursor);
+    }, galleryResponse.next_cursor);
   }));
 
   server.registerTool("cook_recipe", {
