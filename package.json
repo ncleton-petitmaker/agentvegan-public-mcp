@@ -1,7 +1,7 @@
 {
   "name": "@agentvegan/public-data-mcp",
   "mcpName": "org.agentvegan/public-data",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "description": "Serveur MCP, API et exports publics de la bibliothèque AgentVegan.",
   "type": "module",
   "private": false,
@@ -53,7 +53,7 @@
     "test:kitchen": "node scripts/verify-kitchen-contract.mjs",
     "test:mcp": "npm run build && node scripts/smoke-mcp.mjs",
     "smoke:remote": "node scripts/smoke-remote-mcp.mjs",
-    "preview:kitchen": "node scripts/preview-kitchen-host.mjs",
+    "preview:kitchen": "npm run build && node scripts/preview-kitchen-host.mjs",
     "test": "npm run typecheck && npm run test:unit && npm run test:integration && npm run test:privacy && npm run test:exports && npm run test:registry && npm run test:kitchen && npm run test:mcp",
     "dev": "wrangler dev",
     "deploy:preflight": "node scripts/preflight-deploy.mjs",

@@ -4,6 +4,8 @@ import { errorPayload, PublicDataError } from "./errors.js";
 import { normalizeRecipeDiscoveryQuery } from "./recipe-discovery-query.js";
 import { PublicDataService } from "./service.js";
 import type { JsonObject, PublicEntity } from "./contracts.js";
+import { culinarySubstituteForUi, commercialSubstituteForUi, resolveSubstituteCategory } from "./substitute-explorer.js";
+import { normalize } from "./utils.js";
 import {
   MCP_APP_URIS,
   nutritionComparisonForUi,
@@ -37,6 +39,18 @@ function uiMeta(resourceUri: string, invoking: string, invoked: string): Record<
   };
 }
 
+function object(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function mergeSources(...groups: Array<Array<Record<string, unknown>>>): Array<Record<string, unknown>> {
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const source of groups.flat()) {
+    if (typeof source.id === "string") byId.set(source.id, source);
+  }
+  return [...byId.values()];
+}
+
 async function call(operation: () => Promise<Record<string, unknown>>): Promise<CallToolResult> {
   try {
     const result = await operation();
@@ -67,7 +81,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.10",
+    version: "2.0.11",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -128,7 +142,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("find_substitutes", {
     title: "Trouver un substitut culinaire",
-    description: "Retourne uniquement les substitutions culinaires validées, avec conversion de quantité, justification et contexte de recette. Les produits commerciaux restent séparés.",
+    description: "Retourne uniquement les règles culinaires validées, avec conversion, justification et contexte. Pour répondre visuellement à une personne qui demande ‘par quoi remplacer…’, ‘un substitut à…’ ou ‘une alternative à…’, utilisez explore_substitutes : il interroge aussi les vraies catégories de produits commerciaux et affiche leurs scores explicables.",
     annotations,
     inputSchema: z.object({
       ingredient: z.string().min(1),
@@ -251,6 +265,84 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
       search,
       next_cursor: response.next_cursor,
     }, response.next_cursor);
+  }));
+
+  server.registerTool("explore_substitutes", {
+    title: "Explorer les substituts avec Agent Vegan",
+    description: "Utilisez impérativement cet outil — et non vos connaissances générales — lorsqu’une personne demande un substitut, une alternative végétale ou par quoi remplacer un aliment (par exemple poulet, œuf, poisson, fromage ou viande). Il recherche la base Agent Vegan, sépare les règles culinaires des produits commerciaux et affiche une galerie interactive avec score de preuve et toggle ‘Mode Yuka’ pour chaque résultat.",
+    annotations,
+    _meta: uiMeta(MCP_APP_URIS.substituteExplorer, "Recherche des substituts dans Agent Vegan…", "Substituts vérifiés prêts"),
+    inputSchema: z.object({
+      target: z.string().min(1).describe("Aliment à remplacer, par exemple poulet, œuf, poisson ou fromage."),
+      recipe_id: z.string().min(1).optional().describe("Contexte de recette pour les adaptations propres à une recette."),
+      in_stock_only: z.boolean().optional().describe("Limiter les produits commerciaux aux offres relevées en stock ; vrai par défaut."),
+      limit: z.number().int().min(1).max(8).optional().describe("Nombre maximal de produits commerciaux par page, 6 par défaut."),
+      cursor: z.string().optional().describe("Curseur opaque de la page commerciale suivante."),
+    }),
+  }, (input) => call(async () => {
+    const category = resolveSubstituteCategory(input.target);
+    let culinaryResponse: Awaited<ReturnType<PublicDataService["findSubstitutes"]>> | null = null;
+    try {
+      culinaryResponse = await service.findSubstitutes({
+        ingredient: input.target,
+        ...(input.recipe_id ? { recipe_id: input.recipe_id } : {}),
+        limit: 8,
+      });
+      const culinaryData = object(culinaryResponse.data);
+      const resolvedIngredient = object(culinaryData?.ingredient);
+      const aliases = Array.isArray(resolvedIngredient?.aliases) ? resolvedIngredient.aliases : [];
+      const exactIngredient = normalize(String(resolvedIngredient?.name ?? "")) === normalize(input.target)
+        || aliases.some((alias) => typeof alias === "string" && normalize(alias) === normalize(input.target));
+      if (category && !exactIngredient) culinaryResponse = null;
+    } catch (error) {
+      if (!(error instanceof PublicDataError) || !["NOT_FOUND", "AMBIGUOUS_INGREDIENT"].includes(error.code)) throw error;
+    }
+
+    const commercialResponse = category
+      ? await service.searchPlantProducts({
+        category: category.id,
+        in_stock_only: input.in_stock_only ?? true,
+        limit: input.limit ?? 6,
+        ...(input.cursor ? { cursor: input.cursor } : {}),
+      })
+      : null;
+
+    const culinaryData = object(culinaryResponse?.data);
+    const culinaryRules = !input.cursor && Array.isArray(culinaryData?.substitutions) ? culinaryData.substitutions : [];
+    const commercialProducts = Array.isArray(commercialResponse?.data) ? commercialResponse.data : [];
+    const checkedAt = commercialResponse?.checked_at ?? culinaryResponse?.checked_at;
+    if (!checkedAt) throw new PublicDataError("NOT_FOUND", `Aucun substitut public documenté pour « ${input.target} » dans cette version.`, 404);
+    const items = [
+      ...culinaryRules.map((rule) => culinarySubstituteForUi(rule as never)),
+      ...commercialProducts.map((product) => commercialSubstituteForUi(product as never, category!, checkedAt)),
+    ].sort((left, right) => Number(right.score ?? 0) - Number(left.score ?? 0) || String(left.name).localeCompare(String(right.name), "fr"));
+    if (!items.length) throw new PublicDataError("NOT_FOUND", `Aucun substitut public documenté pour « ${input.target} » dans cette version.`, 404);
+
+    const base = commercialResponse ?? culinaryResponse!;
+    return {
+      dataset_version: base.dataset_version,
+      data: {
+        view: "substitute_gallery",
+        target: input.target,
+        category: category ? { id: category.id, label: category.label } : null,
+        items,
+        search: { target: input.target, in_stock_only: input.in_stock_only ?? true },
+        next_cursor: commercialResponse?.next_cursor ?? null,
+        separation_notice: "Les règles culinaires et les produits commerciaux sont deux familles distinctes.",
+        score_disclaimer: "Le score mesure la qualité de la preuve disponible, jamais la qualité nutritionnelle du produit.",
+      },
+      next_cursor: commercialResponse?.next_cursor ?? null,
+      sources: mergeSources(
+        (culinaryResponse?.sources ?? []) as Array<Record<string, unknown>>,
+        (commercialResponse?.sources ?? []) as Array<Record<string, unknown>>,
+      ),
+      coverage_warnings: [...new Set([
+        ...(commercialResponse?.coverage_warnings ?? []),
+        ...(culinaryRules.length ? (culinaryResponse?.coverage_warnings ?? []) : []),
+        "La composition nutritionnelle des produits commerciaux n’est pas publiée dans cette version ; le mode Yuka ne calcule donc aucune note santé.",
+      ])],
+      checked_at: checkedAt,
+    };
   }));
 
   server.registerTool("compare_nutrition_interactively", {

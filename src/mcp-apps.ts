@@ -4,10 +4,11 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v12.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v12.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v12.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v12.html",
+  kitchen: "ui://agentvegan/kitchen/v13.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v13.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v13.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v13.html",
+  substituteExplorer: "ui://agentvegan/substitute-explorer/v13.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -41,6 +42,7 @@ const UI_RESOURCES: UiResource[] = [
   { uri: MCP_APP_URIS.plantProductGallery, title: "Galerie de produits végétaux AgentVegan", description: "Produits végétaux illustrés et offres commerciales datées." },
   { uri: MCP_APP_URIS.nutritionComparison, title: "Comparaison nutritionnelle AgentVegan", description: "Comparaison interactive sur une base nutritionnelle explicite." },
   { uri: MCP_APP_URIS.ingredientExplorer, title: "Explorateur d’ingrédient AgentVegan", description: "Fiche ingrédient, magasins, substitutions et recettes associées." },
+  { uri: MCP_APP_URIS.substituteExplorer, title: "Substituts Agent Vegan", description: "Substitutions culinaires et alternatives commerciales séparées, avec score de preuve explicable." },
 ];
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -238,7 +240,7 @@ function appResource(uri: string): ReadResourceResult {
             frameDomains: [],
           },
         },
-        "openai/widgetDescription": "Explorer les recettes, ingrédients, produits et nutriments AgentVegan dans une interface interactive.",
+        "openai/widgetDescription": "Explorer les recettes, substituts, ingrédients, produits et nutriments Agent Vegan dans une interface interactive.",
         "openai/widgetPrefersBorder": true,
         "openai/widgetDomain": "https://mcp.agentvegan.org",
         "openai/widgetCSP": {

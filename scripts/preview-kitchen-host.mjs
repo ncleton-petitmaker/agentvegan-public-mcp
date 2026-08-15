@@ -1,5 +1,8 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
+import { createAgentVeganMcp } from "../dist/src/mcp.js";
+import { loadLocalService } from "../dist/src/local.js";
 
 const port = Number(process.env.AGENTVEGAN_PREVIEW_PORT ?? 4310);
 const appHtml = await readFile(new URL("../web/dist/index.html", import.meta.url), "utf8");
@@ -26,6 +29,15 @@ const initialResult = {
   },
 };
 
+const mcpServer = createAgentVeganMcp(await loadLocalService());
+const mcpClient = new Client({ name: "agentvegan-visual-proof", version: "2.0.11" });
+const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+await Promise.all([mcpServer.connect(serverTransport), mcpClient.connect(clientTransport)]);
+const substituteCall = await mcpClient.callTool({ name: "explore_substitutes", arguments: { target: "poulet", limit: 6 } });
+if (substituteCall.isError || !substituteCall.structuredContent) throw new Error("La prévisualisation des substituts n’a pas reçu de contrat MCP valide.");
+const initialSubstituteResult = substituteCall.structuredContent;
+await Promise.all([mcpClient.close(), mcpServer.close()]);
+
 function json(value) {
   return JSON.stringify(value).replaceAll("<", "\\u003c");
 }
@@ -42,12 +54,17 @@ const hostHtml = `<!doctype html>
 </head>
 <body>
   <main class="host">
-    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.10</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
+    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.11</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
     <iframe id="app" class="frame" title="Agent Vegan" src="/app" sandbox="allow-scripts"></iframe>
   </main>
   <script>
-    const initialResult = ${json(initialResult)};
-    const simulateReload = new URLSearchParams(location.search).has("reload-empty");
+    const recipeResult = ${json(initialResult)};
+    const substituteResult = ${json(initialSubstituteResult)};
+    const parameters = new URLSearchParams(location.search);
+    const substituteMode = parameters.has("substitutes");
+    const initialResult = substituteMode ? substituteResult : recipeResult;
+    const initialArguments = substituteMode ? { target: "poulet", limit: 6 } : { limit: 6 };
+    const simulateReload = parameters.has("reload-empty");
     const frame = document.querySelector("#app");
     const status = document.querySelector("#status");
     let initialized = false;
@@ -82,7 +99,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/initialize") {
           send({ jsonrpc: "2.0", id: message.id, result: {
             protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.10" },
+            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.11" },
             hostCapabilities: {
               openLinks: {},
               serverTools: {},
@@ -106,7 +123,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/notifications/initialized" && !initialized) {
           initialized = true;
           status.textContent = "Bridge connecté · données de production";
-          send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: { limit: 6 } } });
+          send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: initialArguments } });
           send({
             jsonrpc: "2.0",
             method: "ui/notifications/tool-result",
@@ -115,6 +132,10 @@ const hostHtml = `<!doctype html>
           return;
         }
         if (message.method === "tools/call") {
+          if (message.params?.name === "explore_substitutes" && message.params?.arguments?.target === "poulet" && !message.params?.arguments?.cursor) {
+            send({ jsonrpc: "2.0", id: message.id, result: resultEnvelope(substituteResult) });
+            return;
+          }
           send({ jsonrpc: "2.0", id: message.id, result: await proxyTool(message.params) });
           return;
         }

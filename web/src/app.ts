@@ -123,6 +123,7 @@ const OfferSchema = z.object({
   product_url: safeLink,
   price_cents: optionalNumber,
   unit_price: optionalString,
+  vegan_proof: optionalString,
 }).passthrough();
 
 const ProductCardSchema = z.object({
@@ -194,6 +195,47 @@ const ProductGalleryDataSchema = z.object({
   next_cursor: z.string().nullable(),
 }).passthrough();
 
+const ScoreCriterionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  points: z.number().int().nonnegative(),
+  maximum: z.number().int().positive(),
+  status: z.enum(["verified", "partial", "missing"]),
+  detail: z.string(),
+}).passthrough();
+
+const SubstituteItemSchema = z.object({
+  kind: z.enum(["culinary_rule", "commercial_product"]),
+  id: z.string(),
+  name: z.string(),
+  brand: optionalString,
+  category_label: optionalString,
+  image_url: imageUrl,
+  last_seen_at: optionalString,
+  offers: z.array(OfferSchema).optional().default([]),
+  score: z.number().int().min(0).max(100),
+  score_label: z.string(),
+  score_basis: z.string(),
+  score_criteria: z.array(ScoreCriterionSchema).min(1),
+  quantity_conversion: optionalString,
+  culinary_rationale: optionalString,
+  contexts: z.array(z.string()).optional().default([]),
+  excluded_contexts: z.array(z.string()).optional().default([]),
+  nutrition_status: z.enum(["not_available", "not_compared"]),
+  nutrition_message: z.string(),
+}).passthrough();
+
+const SubstituteGalleryDataSchema = z.object({
+  view: z.literal("substitute_gallery"),
+  target: z.string(),
+  category: z.object({ id: z.string(), label: z.string() }).nullable(),
+  items: z.array(SubstituteItemSchema).min(1).max(10),
+  search: z.record(z.string(), z.unknown()),
+  next_cursor: z.string().nullable(),
+  separation_notice: z.string(),
+  score_disclaimer: z.string(),
+}).passthrough();
+
 const NutritionDataSchema = z.object({
   view: z.literal("nutrition_comparison"),
   basis: z.enum(["100_g", "portion", "recette"]),
@@ -210,6 +252,7 @@ type RecipeCard = z.infer<typeof RecipeCardSchema>;
 type RecipeDetail = z.infer<typeof RecipeDetailSchema>;
 type RecipeGalleryItem = z.infer<typeof RecipeGalleryItemSchema>;
 type ProductCard = z.infer<typeof ProductCardSchema>;
+type SubstituteItem = z.infer<typeof SubstituteItemSchema>;
 type ComparisonSeries = z.infer<typeof ComparisonSeriesSchema>;
 type Ingredient = z.infer<typeof IngredientSchema>;
 
@@ -236,7 +279,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.10" },
+  { name: "Agent Vegan", version: "2.0.11" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -246,8 +289,10 @@ let currentEnvelope: Envelope | null = null;
 let savedGallery: (() => void) | null = null;
 let recipePages: GalleryPage<RecipeGalleryItem>[] = [];
 let productPages: GalleryPage<ProductCard>[] = [];
+let substitutePages: GalleryPage<SubstituteItem>[] = [];
 let recipeSearch: Record<string, unknown> = {};
 let productSearch: Record<string, unknown> = {};
+let substituteSearch: Record<string, unknown> = {};
 let activeTimer: number | null = null;
 let latestToolArguments: Record<string, unknown> = {};
 let restoreInFlight = false;
@@ -855,6 +900,164 @@ function renderProductGallery(data: z.infer<typeof ProductGalleryDataSchema>, en
   renderProductGalleryPage(0, envelope);
 }
 
+function scoreTone(score: number): string {
+  if (score >= 90) return "excellent";
+  if (score >= 75) return "solid";
+  return "limited";
+}
+
+function scoreMedallion(item: SubstituteItem): HTMLElement {
+  const medallion = element("div", `score-medallion ${scoreTone(item.score)}`);
+  medallion.setAttribute("aria-label", `${item.score_label} : ${item.score} sur 100`);
+  medallion.append(element("strong", "", String(item.score)), element("span", "", "/100"));
+  return medallion;
+}
+
+function yukaMode(item: SubstituteItem): HTMLElement {
+  const wrapper = element("div", "yuka-mode");
+  const toggle = button("Mode Yuka", () => {
+    const willOpen = panel.hidden;
+    panel.hidden = !willOpen;
+    toggle.textContent = willOpen ? "Fermer le mode Yuka" : "Mode Yuka";
+    toggle.setAttribute("aria-expanded", String(willOpen));
+  }, "yuka-toggle");
+  const panel = element("div", "yuka-panel");
+  panel.hidden = true;
+  panel.id = `score-${item.id}`;
+  toggle.setAttribute("aria-controls", panel.id);
+  toggle.setAttribute("aria-expanded", "false");
+
+  const heading = element("div", "score-summary");
+  heading.append(scoreMedallion(item));
+  const copy = element("div");
+  copy.append(element("strong", "", item.score_label), element("p", "meta", item.score_basis));
+  heading.append(copy);
+  panel.append(heading);
+
+  const criteria = element("div", "score-criteria");
+  for (const criterion of item.score_criteria) {
+    const row = element("div", `score-criterion ${criterion.status}`);
+    const mark = criterion.status === "verified" ? "✓" : criterion.status === "partial" ? "◐" : "–";
+    row.append(element("span", "criterion-mark", mark));
+    const criterionCopy = element("div");
+    criterionCopy.append(element("strong", "", criterion.label), element("p", "meta", criterion.detail));
+    row.append(criterionCopy, element("span", "criterion-points", `${criterion.points}/${criterion.maximum}`));
+    criteria.append(row);
+  }
+  panel.append(criteria);
+
+  const nutrition = element("div", "nutrition-coverage");
+  nutrition.append(element("strong", "", "Nutrition"), element("p", "meta", item.nutrition_message));
+  panel.append(nutrition);
+  wrapper.append(toggle, panel);
+  return wrapper;
+}
+
+function substituteCard(item: SubstituteItem): HTMLElement {
+  const card = element("article", `substitute-card ${item.kind === "culinary_rule" ? "culinary" : "commercial"}`);
+  if (item.kind === "commercial_product") card.append(imageMedia(item.image_url, `Photo du substitut : ${item.name}`));
+  const body = element("div", "substitute-body");
+  const top = element("div", "substitute-top");
+  const title = element("div");
+  title.append(
+    element("span", "substitute-kind", item.kind === "culinary_rule" ? "Remplacement culinaire" : "Alternative commerciale"),
+    element("h3", "", item.name),
+  );
+  if (item.brand) title.append(element("p", "meta", item.brand));
+  top.append(title, scoreMedallion(item));
+  body.append(top);
+
+  if (item.kind === "culinary_rule") {
+    if (item.quantity_conversion) body.append(element("p", "conversion", item.quantity_conversion));
+    if (item.culinary_rationale) body.append(element("p", "meta", item.culinary_rationale));
+    if (item.contexts.length) {
+      const contexts = element("div", "chips");
+      for (const context of item.contexts) contexts.append(element("span", "chip", context));
+      body.append(contexts);
+    }
+  } else {
+    const bestOffer = item.offers.find((offer) => offer.availability === "in_stock") ?? item.offers[0];
+    if (bestOffer) {
+      const availability = availabilityLabel(bestOffer.availability);
+      const facts = element("div", "chips");
+      facts.append(element("span", availability.className, availability.label));
+      facts.append(element("span", "chip", normalizeLabel(bestOffer.retailer_id)));
+      body.append(facts, element("p", "meta", `Relevé du ${formatDate(bestOffer.checked_at)}`));
+      if (bestOffer.price_cents !== null && bestOffer.price_cents !== undefined) {
+        body.append(element("p", "price", `${formatNumber(bestOffer.price_cents / 100, 2)} €${bestOffer.unit_price ? ` · ${bestOffer.unit_price}` : ""}`));
+      }
+      if (bestOffer.product_url) body.append(button("Voir l’offre datée", async () => {
+        try { await openExternal(bestOffer.product_url); } catch (error) { showError(error instanceof Error ? error.message : "Lien impossible à ouvrir."); }
+      }));
+    }
+  }
+  body.append(yukaMode(item));
+  card.append(body);
+  return card;
+}
+
+function substituteSection(title: string, subtitle: string, items: SubstituteItem[]): HTMLElement {
+  const section = element("section", "substitute-section");
+  const heading = element("div", "section-title");
+  const copy = element("div");
+  copy.append(element("h2", "", title), element("p", "meta", subtitle));
+  heading.append(copy, element("span", "chip", `${items.length} résultat${items.length > 1 ? "s" : ""}`));
+  section.append(heading);
+  const grid = element("div", "substitute-grid");
+  for (const item of items) grid.append(substituteCard(item));
+  section.append(grid);
+  return section;
+}
+
+function renderSubstituteGalleryPage(pageIndex: number, envelope: Envelope, metadata: z.infer<typeof SubstituteGalleryDataSchema>): void {
+  const page = substitutePages[pageIndex];
+  if (!page) return showError("Page de substituts introuvable.");
+  const view = shell(`Remplacer ${metadata.target}`, "Agent Vegan · résultats issus de la base publique");
+  addFullscreenAction(view.actions);
+  const intro = element("div", "score-explainer");
+  intro.append(
+    element("strong", "", "Un score lisible, pas une promesse santé"),
+    element("p", "", metadata.score_disclaimer),
+    element("p", "meta", metadata.separation_notice),
+  );
+  view.content.append(intro);
+
+  const culinary = page.items.filter((item) => item.kind === "culinary_rule");
+  const commercial = page.items.filter((item) => item.kind === "commercial_product");
+  if (culinary.length) view.content.append(substituteSection("En cuisine", "Règles documentées avec conversion et contexte.", culinary));
+  if (commercial.length) view.content.append(substituteSection(metadata.category?.label ?? "Alternatives commerciales", "Références commerciales distinctes, classées par qualité de preuve.", commercial));
+
+  const pager = element("div", "pager");
+  const previous = button("Page précédente", () => renderSubstituteGalleryPage(pageIndex - 1, envelope, metadata));
+  previous.disabled = pageIndex === 0;
+  const next = button("Page suivante", async () => {
+    const cached = substitutePages[pageIndex + 1];
+    if (cached) return renderSubstituteGalleryPage(pageIndex + 1, envelope, metadata);
+    if (!page.nextCursor) return;
+    next.disabled = true;
+    try {
+      const response = await callTool("explore_substitutes", { ...substituteSearch, limit: 6, cursor: page.nextCursor });
+      const parsed = SubstituteGalleryDataSchema.safeParse(response.data);
+      if (!parsed.success || !parsed.data.items.length) throw new Error("La page suivante de substituts est vide ou invalide.");
+      substitutePages.push({ items: parsed.data.items, nextCursor: parsed.data.next_cursor });
+      currentEnvelope = response;
+      renderSubstituteGalleryPage(pageIndex + 1, response, parsed.data);
+    } catch (error) {
+      showError(error instanceof Error ? error.message : "Pagination impossible.");
+    }
+  });
+  next.disabled = !page.nextCursor;
+  pager.append(previous, element("span", "meta", `Page ${pageIndex + 1}`), next);
+  view.content.append(pager);
+  replaceRoot(view.container);
+}
+
+function renderSubstituteGallery(data: z.infer<typeof SubstituteGalleryDataSchema>, envelope: Envelope): void {
+  substituteSearch = data.search;
+  substitutePages = [{ items: data.items, nextCursor: data.next_cursor }];
+  renderSubstituteGalleryPage(0, envelope, data);
+}
+
 function renderNutrition(data: z.infer<typeof NutritionDataSchema>, envelope: Envelope): void {
   const view = shell("Comparaison nutritionnelle", `AgentVegan · base ${data.basis.replaceAll("_", " ")}`);
   addFullscreenAction(view.actions);
@@ -1019,6 +1222,8 @@ function handleToolResult(value: unknown): void {
   }
   const productGallery = ProductGalleryDataSchema.safeParse(data);
   if (productGallery.success) return renderProductGallery(productGallery.data, envelope.data);
+  const substituteGallery = SubstituteGalleryDataSchema.safeParse(data);
+  if (substituteGallery.success) return renderSubstituteGallery(substituteGallery.data, envelope.data);
   const nutrition = NutritionDataSchema.safeParse(data);
   if (nutrition.success) return renderNutrition(nutrition.data, envelope.data);
   const ingredient = IngredientDataSchema.safeParse(data);
@@ -1049,12 +1254,14 @@ function recoveryToolName(): string | null {
     "explore_recipes",
     "cook_recipe",
     "explore_plant_products",
+    "explore_substitutes",
     "compare_nutrition_interactively",
     "explore_ingredient",
   ].includes(declared)) return declared;
   if (typeof latestToolArguments.recipe_id === "string") return "cook_recipe";
   if (typeof latestToolArguments.id === "string") return "get_recipe";
   if (Array.isArray(latestToolArguments.entities)) return "compare_nutrition_interactively";
+  if (typeof latestToolArguments.target === "string") return "explore_substitutes";
   if (typeof latestToolArguments.ingredient === "string") return "explore_ingredient";
   return "explore_recipes";
 }

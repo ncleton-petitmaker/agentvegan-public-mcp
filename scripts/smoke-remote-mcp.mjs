@@ -5,15 +5,15 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.10" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.11" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
 try {
   const tools = await client.listTools();
-  if (tools.tools.length !== 14) throw new Error(`14 outils attendus en production, ${tools.tools.length} reçus.`);
+  if (tools.tools.length !== 15) throw new Error(`15 outils attendus en production, ${tools.tools.length} reçus.`);
   const appTools = tools.tools.filter((tool) => typeof tool._meta?.ui?.resourceUri === "string");
-  if (appTools.length !== 6 || appTools.some((tool) => typeof tool._meta?.["ui/resourceUri"] !== "string" || typeof tool._meta?.["openai/outputTemplate"] !== "string")) {
+  if (appTools.length !== 7 || appTools.some((tool) => typeof tool._meta?.["ui/resourceUri"] !== "string" || typeof tool._meta?.["openai/outputTemplate"] !== "string")) {
     throw new Error("Les points d’entrée UI ne déclarent pas correctement leurs ressources MCP Apps et ChatGPT.");
   }
 
@@ -41,7 +41,7 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v12.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v13.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");
@@ -51,7 +51,15 @@ try {
   if (identity?.title !== "Agent Vegan" || identity.icons?.[0]?.src !== "https://mcp.agentvegan.org/logo.png") {
     throw new Error("L’identité publique Agent Vegan ou son logo PNG n’est pas annoncée par le serveur.");
   }
-  process.stdout.write(`Production vérifiée : 14 outils, Agent Vegan et ${steps.length} étapes illustrées sur ${endpoint.href}.\n`);
+  const substitutes = await client.callTool({ name: "explore_substitutes", arguments: { target: "poulet", limit: 6 } });
+  const substituteItems = substitutes.structuredContent?.data?.items;
+  if (substitutes.isError || substitutes.structuredContent?.data?.view !== "substitute_gallery" || !Array.isArray(substituteItems) || substituteItems.length !== 6) {
+    throw new Error("Le parcours distant « substitut au poulet » n’affiche pas sa galerie.");
+  }
+  if (substituteItems.some((item) => item.kind !== "commercial_product" || !Number.isInteger(item.score) || !item.score_criteria?.length)) {
+    throw new Error("Le score ou le mode Yuka d’un substitut distant est incomplet.");
+  }
+  process.stdout.write(`Production vérifiée : 15 outils, galerie de substituts scorés, Agent Vegan et ${steps.length} étapes illustrées sur ${endpoint.href}.\n`);
 } finally {
   await client.close();
 }

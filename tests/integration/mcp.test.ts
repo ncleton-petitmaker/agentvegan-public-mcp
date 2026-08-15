@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 describe("MCP officiel", () => {
-  it("conserve les neuf outils de données, ajoute cinq rendus et exécute les parcours interactifs", async () => {
+  it("conserve les neuf outils de données, ajoute six rendus et exécute les parcours interactifs", async () => {
     const server = createAgentVeganMcp(service);
     const client = new Client({ name: "agentvegan-tests", version: "1.0.0" });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -33,11 +33,11 @@ describe("MCP officiel", () => {
       });
       const tools = await client.listTools();
       expect(tools.tools.map((tool) => tool.name).sort()).toEqual([
-        "compare_nutrition", "compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "find_stores_for_ingredient", "find_substitutes", "get_catalog_status", "get_ingredient", "get_recipe", "search_ingredients", "search_plant_products", "search_recipes",
+        "compare_nutrition", "compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "explore_substitutes", "find_stores_for_ingredient", "find_substitutes", "get_catalog_status", "get_ingredient", "get_recipe", "search_ingredients", "search_plant_products", "search_recipes",
       ]);
       expect(tools.tools.every((tool) => tool.annotations?.readOnlyHint === true && tool.annotations.destructiveHint === false)).toBe(true);
       const appTools = tools.tools.filter((tool) => typeof (tool._meta?.ui as { resourceUri?: unknown } | undefined)?.resourceUri === "string");
-      expect(appTools.map((tool) => tool.name).sort()).toEqual(["compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "get_recipe"]);
+      expect(appTools.map((tool) => tool.name).sort()).toEqual(["compare_nutrition_interactively", "cook_recipe", "explore_ingredient", "explore_plant_products", "explore_recipes", "explore_substitutes", "get_recipe"]);
       expect(appTools.every((tool) => typeof tool._meta?.["ui/resourceUri"] === "string" && typeof tool._meta?.["openai/outputTemplate"] === "string")).toBe(true);
 
       const result = await client.callTool({ name: "find_substitutes", arguments: { ingredient: "oeuf" } });
@@ -74,6 +74,27 @@ describe("MCP officiel", () => {
       const productGallery = await client.callTool({ name: "explore_plant_products", arguments: { limit: 3 } });
       expect(productGallery).toMatchObject({ structuredContent: { data: { view: "plant_product_gallery", items: expect.any(Array) } } });
 
+      const substitutes = await client.callTool({ name: "explore_substitutes", arguments: { target: "poulet", limit: 6 } });
+      expect(substitutes.isError).not.toBe(true);
+      expect(substitutes.structuredContent).toMatchObject({
+        data: {
+          view: "substitute_gallery",
+          target: "poulet",
+          category: { id: "poulet-vegetal" },
+          items: expect.arrayContaining([expect.objectContaining({
+            kind: "commercial_product",
+            score: expect.any(Number),
+            score_label: "Score de preuve catalogue",
+            nutrition_status: "not_available",
+            score_criteria: expect.any(Array),
+          })]),
+        },
+      });
+      expect((substitutes.structuredContent as { data: { items: unknown[] } }).data.items).toHaveLength(6);
+
+      const eggSubstitutes = await client.callTool({ name: "explore_substitutes", arguments: { target: "oeuf", limit: 3 } });
+      expect(eggSubstitutes.structuredContent).toMatchObject({ data: { items: expect.arrayContaining([expect.objectContaining({ kind: "culinary_rule", name: "graines de lin moulues et eau" })]) } });
+
       const comparison = await client.callTool({ name: "compare_nutrition_interactively", arguments: { entities: ["tofu", "seitan"], basis: "100_g" } });
       expect(comparison).toMatchObject({ structuredContent: { data: { view: "nutrition_comparison", basis: "100_g", series: expect.any(Array) } } });
 
@@ -86,10 +107,13 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v12.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v13.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");
+      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Mode Yuka");
+      const substituteUi = await client.readResource({ uri: "ui://agentvegan/substitute-explorer/v13.html" });
+      expect(substituteUi.contents[0]).toMatchObject({ mimeType: "text/html;profile=mcp-app" });
     } finally {
       await client.close();
       await server.close();
