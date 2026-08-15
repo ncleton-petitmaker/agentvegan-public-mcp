@@ -4,7 +4,7 @@ import { loadLocalService } from "../dist/src/local.js";
 
 const service = await loadLocalService();
 const server = createAgentVeganMcp(service);
-const client = new Client({ name: "agentvegan-smoke", version: "2.0.13" });
+const client = new Client({ name: "agentvegan-smoke", version: "2.0.14" });
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 try {
@@ -19,7 +19,7 @@ try {
   if (result.isError || !result.structuredContent?.dataset_version) throw new Error("L’appel MCP compare_nutrition a échoué.");
   const resource = await client.readResource({ uri: "agentvegan://catalog/manifest" });
   if (!resource.contents.length) throw new Error("La ressource manifeste MCP est vide.");
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v15.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v16.html" });
   if (ui.contents[0]?.mimeType !== "text/html;profile=mcp-app" || !("text" in ui.contents[0]) || !ui.contents[0].text.includes("Agent Vegan")) {
     throw new Error("La ressource MCP Apps n’est pas disponible ou possède un MIME invalide.");
   }
@@ -37,11 +37,11 @@ try {
   if (substitutes.isError || substitutes.structuredContent?.data?.view !== "substitute_gallery" || substitutes.structuredContent?.data?.items?.length !== 6) {
     throw new Error("La galerie de substituts au poulet n’est pas disponible.");
   }
-  if (substitutes.structuredContent.data.items.some((item) => item.kind !== "commercial_product" || !Number.isInteger(item.score) || !item.score_criteria?.length || !/^[a-e]$/u.test(item.nutrition?.display_nutri_score?.grade ?? ""))) {
-    throw new Error("Un substitut commercial n’a pas son score de preuve explicable.");
+  if (substitutes.structuredContent.data.items.some((item) => item.kind !== "commercial_product" || "score" in item || "score_label" in item || "score_basis" in item || "score_criteria" in item || !/^[a-e]$/u.test(item.nutrition?.display_nutri_score?.grade ?? ""))) {
+    throw new Error("Un substitut commercial expose un score interne ou n’a pas son Nutri-Score.");
   }
 } finally {
   await client.close();
   await server.close();
 }
-process.stdout.write("MCP SDK v2 : 9 outils publics, 6 rendus Agent Vegan, substituts scorés et toutes les étapes illustrées vérifiés.\n");
+process.stdout.write("MCP SDK v2 : 9 outils publics, 6 rendus Agent Vegan, substituts avec Nutri-Score et toutes les étapes illustrées vérifiés.\n");

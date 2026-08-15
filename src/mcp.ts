@@ -51,6 +51,15 @@ function mergeSources(...groups: Array<Array<Record<string, unknown>>>): Array<R
   return [...byId.values()];
 }
 
+function withoutInternalRankingScore(item: JsonObject): JsonObject {
+  const visible = { ...item };
+  delete visible.score;
+  delete visible.score_label;
+  delete visible.score_basis;
+  delete visible.score_criteria;
+  return visible;
+}
+
 async function call(operation: () => Promise<Record<string, unknown>>): Promise<CallToolResult> {
   try {
     const result = await operation();
@@ -81,7 +90,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.13",
+    version: "2.0.14",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -142,7 +151,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("find_substitutes", {
     title: "Trouver un substitut culinaire",
-    description: "Retourne uniquement les règles culinaires validées, avec conversion, justification et contexte. Pour répondre visuellement à une personne qui demande ‘par quoi remplacer…’, ‘un substitut à…’ ou ‘une alternative à…’, utilisez explore_substitutes : il interroge aussi les vraies catégories de produits commerciaux et affiche leurs scores explicables.",
+    description: "Retourne uniquement les règles culinaires validées, avec conversion, justification et contexte. Pour répondre visuellement à une personne qui demande ‘par quoi remplacer…’, ‘un substitut à…’ ou ‘une alternative à…’, utilisez explore_substitutes : il interroge aussi les vraies catégories de produits commerciaux et affiche leur Nutri-Score lorsqu’il est publié.",
     annotations,
     inputSchema: z.object({
       ingredient: z.string().min(1),
@@ -269,7 +278,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("explore_substitutes", {
     title: "Explorer les substituts avec Agent Vegan",
-    description: "Utilisez impérativement cet outil — et non vos connaissances générales — lorsqu’une personne demande un substitut, une alternative végétale ou par quoi remplacer un aliment (par exemple poulet, œuf, poisson, fromage ou viande). Il recherche la base Agent Vegan, sépare les règles culinaires des produits commerciaux et affiche une galerie interactive avec score de preuve, Nutri-Score et bouton ‘Détails’ pour chaque résultat.",
+    description: "Utilisez impérativement cet outil — et non vos connaissances générales — lorsqu’une personne demande un substitut, une alternative végétale ou par quoi remplacer un aliment (par exemple poulet, œuf, poisson, fromage ou viande). Il recherche la base Agent Vegan, sépare les règles culinaires des produits commerciaux et affiche une galerie interactive avec Nutri-Score et bouton ‘Détails’ pour chaque produit.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.substituteExplorer, "Recherche des substituts dans Agent Vegan…", "Substituts vérifiés prêts"),
     inputSchema: z.object({
@@ -312,10 +321,11 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
     const commercialProducts = Array.isArray(commercialResponse?.data) ? commercialResponse.data : [];
     const checkedAt = commercialResponse?.checked_at ?? culinaryResponse?.checked_at;
     if (!checkedAt) throw new PublicDataError("NOT_FOUND", `Aucun substitut public documenté pour « ${input.target} » dans cette version.`, 404);
-    const items = [
+    const rankedItems = [
       ...culinaryRules.map((rule) => culinarySubstituteForUi(rule as never)),
       ...commercialProducts.map((product) => commercialSubstituteForUi(product as never, category!, checkedAt)),
     ].sort((left, right) => Number(right.score ?? 0) - Number(left.score ?? 0) || String(left.name).localeCompare(String(right.name), "fr"));
+    const items = rankedItems.map(withoutInternalRankingScore);
     if (!items.length) throw new PublicDataError("NOT_FOUND", `Aucun substitut public documenté pour « ${input.target} » dans cette version.`, 404);
 
     const base = commercialResponse ?? culinaryResponse!;
@@ -329,7 +339,6 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
         search: { target: input.target, in_stock_only: input.in_stock_only ?? true },
         next_cursor: commercialResponse?.next_cursor ?? null,
         separation_notice: "Les règles culinaires et les produits commerciaux sont deux familles distinctes.",
-        score_disclaimer: "Le score mesure la qualité de la preuve disponible, jamais la qualité nutritionnelle du produit.",
       },
       next_cursor: commercialResponse?.next_cursor ?? null,
       sources: mergeSources(

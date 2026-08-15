@@ -30,7 +30,7 @@ const initialResult = {
 };
 
 const mcpServer = createAgentVeganMcp(await loadLocalService());
-const mcpClient = new Client({ name: "agentvegan-visual-proof", version: "2.0.13" });
+const mcpClient = new Client({ name: "agentvegan-visual-proof", version: "2.0.14" });
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 await Promise.all([mcpServer.connect(serverTransport), mcpClient.connect(clientTransport)]);
 const substituteCall = await mcpClient.callTool({ name: "explore_substitutes", arguments: { target: "poulet", limit: 6 } });
@@ -54,7 +54,7 @@ const hostHtml = `<!doctype html>
 </head>
 <body>
   <main class="host">
-    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.13</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
+    <header class="bar"><div><strong>Validation réelle · Agent Vegan 2.0.14</strong><div class="hint">Données chargées depuis mcp.agentvegan.org</div></div><span id="status" class="status">Connexion au bridge…</span></header>
     <iframe id="app" class="frame" title="Agent Vegan" src="/app" sandbox="allow-scripts"></iframe>
   </main>
   <script>
@@ -99,7 +99,7 @@ const hostHtml = `<!doctype html>
         if (message.method === "ui/initialize") {
           send({ jsonrpc: "2.0", id: message.id, result: {
             protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.13" },
+            hostInfo: { name: "agentvegan-visual-proof", version: "2.0.14" },
             hostCapabilities: {
               openLinks: {},
               serverTools: {},

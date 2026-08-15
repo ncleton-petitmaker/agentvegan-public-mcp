@@ -4,11 +4,11 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v15.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v15.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v15.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v15.html",
-  substituteExplorer: "ui://agentvegan/substitute-explorer/v15.html",
+  kitchen: "ui://agentvegan/kitchen/v16.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v16.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v16.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v16.html",
+  substituteExplorer: "ui://agentvegan/substitute-explorer/v16.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -42,7 +42,7 @@ const UI_RESOURCES: UiResource[] = [
   { uri: MCP_APP_URIS.plantProductGallery, title: "Galerie de produits végétaux AgentVegan", description: "Produits végétaux illustrés et offres commerciales datées." },
   { uri: MCP_APP_URIS.nutritionComparison, title: "Comparaison nutritionnelle AgentVegan", description: "Comparaison interactive sur une base nutritionnelle explicite." },
   { uri: MCP_APP_URIS.ingredientExplorer, title: "Explorateur d’ingrédient AgentVegan", description: "Fiche ingrédient, magasins, substitutions et recettes associées." },
-  { uri: MCP_APP_URIS.substituteExplorer, title: "Substituts Agent Vegan", description: "Substitutions culinaires et alternatives commerciales séparées, avec score de preuve explicable." },
+  { uri: MCP_APP_URIS.substituteExplorer, title: "Substituts Agent Vegan", description: "Substitutions culinaires et alternatives commerciales séparées, avec Nutri-Score visible." },
 ];
 
 function record(value: unknown): Record<string, unknown> | null {

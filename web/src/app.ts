@@ -249,15 +249,6 @@ const ProductGalleryDataSchema = z.object({
   next_cursor: z.string().nullable(),
 }).passthrough();
 
-const ScoreCriterionSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  points: z.number().int().nonnegative(),
-  maximum: z.number().int().positive(),
-  status: z.enum(["verified", "partial", "missing"]),
-  detail: z.string(),
-}).passthrough();
-
 const SubstituteItemSchema = z.object({
   kind: z.enum(["culinary_rule", "commercial_product"]),
   id: z.string(),
@@ -267,10 +258,6 @@ const SubstituteItemSchema = z.object({
   image_url: imageUrl,
   last_seen_at: optionalString,
   offers: z.array(OfferSchema).optional().default([]),
-  score: z.number().int().min(0).max(100),
-  score_label: z.string(),
-  score_basis: z.string(),
-  score_criteria: z.array(ScoreCriterionSchema).min(1),
   quantity_conversion: optionalString,
   culinary_rationale: optionalString,
   contexts: z.array(z.string()).optional().default([]),
@@ -292,7 +279,6 @@ const SubstituteGalleryDataSchema = z.object({
   search: z.record(z.string(), z.unknown()),
   next_cursor: z.string().nullable(),
   separation_notice: z.string(),
-  score_disclaimer: z.string(),
 }).passthrough();
 
 const NutritionDataSchema = z.object({
@@ -339,7 +325,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.13" },
+  { name: "Agent Vegan", version: "2.0.14" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -1037,20 +1023,10 @@ function renderProductGallery(data: z.infer<typeof ProductGalleryDataSchema>, en
   renderProductGalleryPage(0, envelope);
 }
 
-function scoreTone(score: number): string {
-  if (score >= 90) return "excellent";
-  if (score >= 75) return "solid";
-  return "limited";
-}
-
-function scoreMedallion(item: SubstituteItem): HTMLElement {
-  const medallion = element("div", `score-medallion ${scoreTone(item.score)}`);
-  medallion.setAttribute("aria-label", `${item.score_label} : ${item.score} sur 100`);
-  medallion.append(element("strong", "", String(item.score)), element("span", "", "/100"));
-  return medallion;
-}
-
 function detailsToggle(item: SubstituteItem): HTMLElement {
+  if (item.kind !== "commercial_product" || !item.nutrition) {
+    throw new Error("Les détails nutritionnels sont réservés aux produits commerciaux avec Nutri-Score.");
+  }
   const wrapper = element("div", "details-mode");
   const toggle = button("Détails", () => {
     const willOpen = panel.hidden;
@@ -1060,36 +1036,11 @@ function detailsToggle(item: SubstituteItem): HTMLElement {
   }, "details-toggle");
   const panel = element("div", "details-panel");
   panel.hidden = true;
-  panel.id = `score-${item.id}`;
+  panel.id = `nutrition-${item.id}`;
   toggle.setAttribute("aria-controls", panel.id);
   toggle.setAttribute("aria-expanded", "false");
 
-  const heading = element("div", "score-summary");
-  heading.append(scoreMedallion(item));
-  const copy = element("div");
-  copy.append(element("strong", "", item.score_label), element("p", "meta", item.score_basis));
-  heading.append(copy);
-  panel.append(heading);
-
-  const criteria = element("div", "score-criteria");
-  for (const criterion of item.score_criteria) {
-    const row = element("div", `score-criterion ${criterion.status}`);
-    const mark = criterion.status === "verified" ? "✓" : criterion.status === "partial" ? "◐" : "–";
-    row.append(element("span", "criterion-mark", mark));
-    const criterionCopy = element("div");
-    criterionCopy.append(element("strong", "", criterion.label), element("p", "meta", criterion.detail));
-    row.append(criterionCopy, element("span", "criterion-points", `${criterion.points}/${criterion.maximum}`));
-    criteria.append(row);
-  }
-  panel.append(criteria);
-
-  if (item.kind === "commercial_product" && item.nutrition) {
-    panel.append(productNutritionDetails(item.nutrition));
-  } else {
-    const nutrition = element("div", "nutrition-coverage");
-    nutrition.append(element("strong", "", "Nutrition"), element("p", "meta", item.nutrition_message));
-    panel.append(nutrition);
-  }
+  panel.append(productNutritionDetails(item.nutrition));
   wrapper.append(toggle, panel);
   return wrapper;
 }
@@ -1105,10 +1056,8 @@ function substituteCard(item: SubstituteItem): HTMLElement {
     element("h3", "", item.name),
   );
   if (item.brand) title.append(element("p", "meta", item.brand));
-  const scores = element("div", "substitute-scores");
-  scores.append(scoreMedallion(item));
-  if (item.kind === "commercial_product" && item.nutrition) scores.append(nutriScoreLogo(item.nutrition));
-  top.append(title, scores);
+  top.append(title);
+  if (item.kind === "commercial_product" && item.nutrition) top.append(nutriScoreLogo(item.nutrition));
   body.append(top);
 
   if (item.kind === "culinary_rule") {
@@ -1135,7 +1084,7 @@ function substituteCard(item: SubstituteItem): HTMLElement {
       }));
     }
   }
-  body.append(detailsToggle(item));
+  if (item.kind === "commercial_product" && item.nutrition) body.append(detailsToggle(item));
   card.append(body);
   return card;
 }
@@ -1158,18 +1107,11 @@ function renderSubstituteGalleryPage(pageIndex: number, envelope: Envelope, meta
   if (!page) return showError("Page de substituts introuvable.");
   const view = shell(`Remplacer ${metadata.target}`, "Agent Vegan · résultats issus de la base publique");
   addFullscreenAction(view.actions);
-  const intro = element("div", "score-explainer");
-  intro.append(
-    element("strong", "", "Un score lisible, pas une promesse santé"),
-    element("p", "", metadata.score_disclaimer),
-    element("p", "meta", metadata.separation_notice),
-  );
-  view.content.append(intro);
 
   const culinary = page.items.filter((item) => item.kind === "culinary_rule");
   const commercial = page.items.filter((item) => item.kind === "commercial_product");
   if (culinary.length) view.content.append(substituteSection("En cuisine", "Règles documentées avec conversion et contexte.", culinary));
-  if (commercial.length) view.content.append(substituteSection(metadata.category?.label ?? "Alternatives commerciales", "Références commerciales distinctes, classées par qualité de preuve.", commercial));
+  if (commercial.length) view.content.append(substituteSection(metadata.category?.label ?? "Alternatives commerciales", "Produits disponibles avec leur Nutri-Score publié.", commercial));
 
   const pager = element("div", "pager");
   const previous = button("Page précédente", () => renderSubstituteGalleryPage(pageIndex - 1, envelope, metadata));
