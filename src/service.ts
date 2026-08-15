@@ -16,6 +16,7 @@ import { clampLimit, decodeCursor, normalize, paginate, unique } from "./utils.j
 const SOURCE_RECIPES = "source:agentvegan-public-recipes";
 const SOURCE_MARKETPLACE = "source:agentvegan-public-marketplace";
 const SOURCE_SUBSTITUTIONS = "source:agentvegan-public-availability-variants";
+const SOURCE_NUTRI_SCORE = "source:nutri-score";
 const PUBLIC_ENTITIES = new Set<PublicEntity>([
   "recipe",
   "ingredient",
@@ -129,8 +130,10 @@ function productSummary(product: PlantProduct): JsonObject {
     name: product.name,
     brand: product.brand ?? null,
     category_id: product.category_id ?? null,
+    gtin: product.gtin ?? null,
     image_url: product.image_url ?? null,
     last_seen_at: product.last_seen_at ?? null,
+    nutrition: product.nutrition ?? null,
     offers: product.offers,
   };
 }
@@ -352,7 +355,7 @@ export class PublicDataService {
       limit: clampLimit(input.limit),
       ...(input.cursor ? { cursor: input.cursor } : {}),
     });
-    return this.envelope(page.items.map(productSummary), page.nextCursor, ["Le recensement des produits végétaux est en cours et les offres restent datées."], [SOURCE_MARKETPLACE]);
+    return this.envelope(page.items.map(productSummary), page.nextCursor, ["Le recensement des produits végétaux est en cours et les offres restent datées."], [SOURCE_MARKETPLACE, SOURCE_NUTRI_SCORE]);
   }
 
   async compareNutrition(input: { entities: string[]; basis: "100_g" | "portion" | "recette" }): Promise<PublicResponse> {

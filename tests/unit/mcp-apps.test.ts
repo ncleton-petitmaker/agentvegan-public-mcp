@@ -53,13 +53,29 @@ describe("projection MCP Apps", () => {
     expect(card).not.toHaveProperty("subtitle");
     expect(card).not.toHaveProperty("meal");
     expect(card).not.toHaveProperty("nutrition");
-    expect(productCardForUi({ id: "p", name: "P", image_url: "https://cdn.greenweez.com/p.webp", offers: [] })).toMatchObject({ id: "p", image_url: "https://cdn.greenweez.com/p.webp", offers: [] });
+    expect(productCardForUi({
+      id: "p",
+      name: "P",
+      image_url: "https://cdn.greenweez.com/p.webp",
+      nutrition: { status: "complete", basis: "100g", values: {}, display_nutri_score: { grade: "a", estimated: false } },
+      offers: [],
+    })).toMatchObject({ id: "p", image_url: "https://cdn.greenweez.com/p.webp", nutrition: { display_nutri_score: { grade: "a" } }, offers: [] });
   });
 
   it("cache la nutrition derrière une commande explicite dans la fiche recette", () => {
     expect(MCP_APP_HTML).toContain("Afficher la nutrition");
     expect(MCP_APP_HTML).toContain("Masquer la nutrition");
     expect(MCP_APP_HTML).not.toContain("sources-panel");
+  });
+
+  it("affiche le Nutri-Score produit sur la tuile et réserve la méthode au bouton Détails", () => {
+    expect(MCP_APP_HTML).toContain("nutriscore-");
+    expect(MCP_APP_HTML).toContain("Nutri-Score");
+    expect(MCP_APP_HTML).toContain("Détails");
+    expect(MCP_APP_HTML).toContain("Ouvrir l’offre");
+    expect(MCP_APP_HTML).not.toContain("Mode Yuka");
+    expect(MCP_APP_HTML).not.toContain("Voir l’offre datée");
+    expect(MCP_APP_HTML).not.toContain("Ouvrir l’offre datée");
   });
 
   it("embarque la fiche complète dans chaque carte interactive", () => {

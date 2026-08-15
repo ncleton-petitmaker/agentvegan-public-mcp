@@ -72,6 +72,12 @@ function ageInDays(checkedAt: string, evidenceAt: string | null): number | null 
 }
 
 export function commercialSubstituteForUi(product: PlantProduct, category: SubstituteCategory, checkedAt: string): JsonObject {
+  const nutrition = record(product.nutrition) as JsonObject | null;
+  const displayNutriScore = record(nutrition?.display_nutri_score);
+  const nutriScoreGrade = text(displayNutriScore?.grade)?.toLowerCase();
+  if (!nutrition || !nutriScoreGrade || !/^[a-e]$/u.test(nutriScoreGrade)) {
+    throw new Error(`Nutri-Score public absent ou invalide pour ${product.id}.`);
+  }
   const offers = product.offers.map(record).filter((offer): offer is Record<string, unknown> => offer !== null);
   const inStockOffer = offers.find((offer) => offer.availability === "in_stock");
   const bestOffer = inStockOffer ?? offers[0] ?? null;
@@ -105,8 +111,13 @@ export function commercialSubstituteForUi(product: PlantProduct, category: Subst
     score_label: "Score de preuve catalogue",
     score_basis: "Catégorie exacte, preuve végane, disponibilité datée, fraîcheur et traçabilité de la fiche.",
     score_criteria: criteria,
-    nutrition_status: "not_available",
-    nutrition_message: "Composition nutritionnelle produit non publiée dans cette version : aucune note santé n’est calculée.",
+    nutrition,
+    nutrition_status: text(nutrition.status) ?? "missing",
+    nutrition_message: nutrition.status === "complete"
+      ? "Composition nutritionnelle complète publiée sur une base de 100 g."
+      : nutrition.status === "partial"
+        ? "Composition nutritionnelle partielle publiée sur une base de 100 g."
+        : "Les valeurs nutritionnelles chiffrées ne sont pas disponibles pour ce produit ; la provenance du Nutri-Score reste indiquée.",
   };
 }
 

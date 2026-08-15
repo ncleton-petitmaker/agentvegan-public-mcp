@@ -29,7 +29,7 @@ Parcours visuels disponibles :
 - fiche recette avec image principale, checklist d’ingrédients, les 16 nutriments prioritaires et le film complet des étapes ;
 - cockpit cuisine plein écran avec une grande image par étape, instruction exacte, ingrédients visibles, minuteur, contrôle de fin, pièges et boutons précédent/suivant ;
 - galerie de produits avec disponibilité et date de vérification ;
-- galerie de substituts issue de la base, séparant règles culinaires et alternatives commerciales, avec score de preuve explicable et toggle « Mode Yuka » par carte ;
+- galerie de substituts issue de la base, séparant règles culinaires et alternatives commerciales, avec score de preuve explicable, Nutri-Score visible et panneau « Détails » par carte ;
 - comparaison nutritionnelle interactive sur `100_g`, `portion` ou `recette` ;
 - fiche ingrédient avec recettes associées, magasins et substitutions.
 
@@ -81,7 +81,7 @@ npm run data:sync
 npm test
 ```
 
-Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils publics et les six points d’entrée visuels sont annotés lecture seule, non destructifs et idempotents. Les cinq ressources `ui://agentvegan/.../v14.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. `search_recipes` et `get_recipe` déclarent eux-mêmes Agent Vegan afin que l’interface s’affiche même si l’hôte choisit directement l’outil de données ; les outils `explore_*` et `cook_recipe` rendent le parcours visuel explicite. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt. Pour les résultats initiaux comme pour les appels déclenchés dans l’iframe, l’interface valide le `structuredContent` MCP standard et le même contrat JSON canonique présent dans le bloc texte MCP. Lors du rechargement d’une conversation, elle restaure un résultat absent en rappelant l’outil de lecture d’origine avec le dernier `toolinput` standard MCP Apps ; l’extension historique `window.openai.toolOutput` reste reconnue pour les anciens hôtes ChatGPT.
+Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeScript officiel v2. Les neuf outils publics et les six points d’entrée visuels sont annotés lecture seule, non destructifs et idempotents. Les cinq ressources `ui://agentvegan/.../v15.html` sont servies en `text/html;profile=mcp-app` avec une CSP restrictive. `search_recipes` et `get_recipe` déclarent eux-mêmes Agent Vegan afin que l’interface s’affiche même si l’hôte choisit directement l’outil de données ; les outils `explore_*` et `cook_recipe` rendent le parcours visuel explicite. Les images restent des URL distantes autorisées explicitement : aucun octet d’image n’est copié dans le Worker, D1 ou ce dépôt. Pour les résultats initiaux comme pour les appels déclenchés dans l’iframe, l’interface valide le `structuredContent` MCP standard et le même contrat JSON canonique présent dans le bloc texte MCP. Lors du rechargement d’une conversation, elle restaure un résultat absent en rappelant l’outil de lecture d’origine avec le dernier `toolinput` standard MCP Apps ; l’extension historique `window.openai.toolOutput` reste reconnue pour les anciens hôtes ChatGPT.
 
 Le bundle UI est produit en fichier unique et embarqué dans le serveur :
 

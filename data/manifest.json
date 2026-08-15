@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0.0",
-  "projection_revision": "2026-08-15.8",
-  "dataset_version": "agentvegan-public-data-v1-660ac999953893cc",
+  "projection_revision": "2026-08-15.9",
+  "dataset_version": "agentvegan-public-data-v1-8b35389dfcba47c6",
   "locale": "fr-FR",
   "geographic_scope": "France",
-  "generated_at": "2026-08-15T12:32:17.265Z",
+  "generated_at": "2026-08-15T21:09:46.722Z",
   "checked_at": "2026-08-14T17:21:39.309Z",
   "counts": {
     "recipes": 431,
@@ -17,19 +17,27 @@
     "substitution_rules": 53,
     "ingredients_classified_for_substitution": 545,
     "plant_products": 517,
+    "plant_products_with_nutrition": 517,
+    "plant_products_with_complete_nutrition": 508,
+    "plant_products_with_numeric_nutrition": 511,
+    "plant_products_with_nutri_score": 517,
     "plant_product_offers": 558,
-    "sources": 17
+    "sources": 18
   },
   "coverage": {
     "recipe_ingredient_indexing": 1,
     "substitution_classification": 1,
     "ingredient_nutrition": 0.7908256880733945,
-    "plant_product_catalog_status": "in_progress"
+    "plant_product_catalog_status": "in_progress",
+    "plant_product_nutrition": 1,
+    "plant_product_complete_nutrition": 0.9825918762088974,
+    "plant_product_numeric_nutrition": 0.988394584139265,
+    "plant_product_nutri_score": 1
   },
   "files": {
     "catalog.json": {
-      "sha256": "a034ea92bf8cb81caf81f5f44334eda8e89ce66493b7cd1bd502a3a3c6b484bf",
-      "bytes": 15568677,
+      "sha256": "40e68ba83696cd3387126f9ba92e985a133e282490958263053e45119d6f91ea",
+      "bytes": 16207346,
       "media_type": "application/json"
     }
   },
@@ -37,6 +45,7 @@
     "recipes": "sha256:f9358c2e8cdc19fa77507fd308e72ab9f218a0d5855020ab110f79c724d64088",
     "marketplace": "sha256:d8feedf95e9d5d587f19809a79209f7aa4194f5228937cd84962267cd7790e3e",
     "products": "sha256:717051b108e29d2bbe7c5a9fd7cd3068c49f6bfa8830bb7872440bf414367d0a",
+    "productImpact": "sha256:deda84622cd9714d2e787b5d3e9e0ab8002cdd3e321fdba22534f74b3bd6c22a",
     "substitutions": "sha256:fbff5a116340fb90ca5c40101633d4ef8730e30ff8a4c43eaa1068f33ad34df8",
     "officialNutrition": "sha256:65662e7989ddf72c1a8729e1cc4c912db68e5412ee7f62239f0b5187457d4de5",
     "functionalSubstitutions": "sha256:2d618874d8232c40b5997e09638b63638c7952da5b5c81074478e43d2117220e"

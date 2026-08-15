@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
-  "dataset_version": "agentvegan-public-data-v1-660ac999953893cc",
-  "generated_at": "2026-08-15T12:32:17.265Z",
+  "dataset_version": "agentvegan-public-data-v1-8b35389dfcba47c6",
+  "generated_at": "2026-08-15T21:09:46.722Z",
   "checked_at": "2026-08-14T17:21:39.309Z",
   "locale": "fr-FR",
   "geographic_scope": "France",
@@ -16,14 +16,22 @@
     "substitution_rules": 53,
     "ingredients_classified_for_substitution": 545,
     "plant_products": 517,
+    "plant_products_with_nutrition": 517,
+    "plant_products_with_complete_nutrition": 508,
+    "plant_products_with_numeric_nutrition": 511,
+    "plant_products_with_nutri_score": 517,
     "plant_product_offers": 558,
-    "sources": 17
+    "sources": 18
   },
   "coverage": {
     "recipe_ingredient_indexing": 1,
     "substitution_classification": 1,
     "ingredient_nutrition": 0.7908256880733945,
-    "plant_product_catalog_status": "in_progress"
+    "plant_product_catalog_status": "in_progress",
+    "plant_product_nutrition": 1,
+    "plant_product_complete_nutrition": 0.9825918762088974,
+    "plant_product_numeric_nutrition": 0.988394584139265,
+    "plant_product_nutri_score": 1
   },
   "files": {
     "recipes.jsonl.gz": {
@@ -67,8 +75,8 @@
       "count": 53
     },
     "plant-products.jsonl.gz": {
-      "sha256": "abd798e85f1a58b9092a1880a119ba559146522f0c9678e5fb5e0d6cbf2e67bb",
-      "bytes": 50292,
+      "sha256": "e675a3ff386c8ba25578e0b5ae5898eda474541a7b17dae9b2be6a67c8b4bfa5",
+      "bytes": 81953,
       "media_type": "application/x-ndjson",
       "content_encoding": "gzip",
       "count": 517
@@ -80,10 +88,10 @@
       "count": 11
     },
     "source-references.json": {
-      "sha256": "59e7ed2b02c66cfff70693ac3d214f85b4e8e327082a0e4cb79e4d7f1e477b00",
-      "bytes": 5463,
+      "sha256": "e959de1abff103f7935258a05530e7fbd617bb6b15ce51b4ff7b90bc10159c6b",
+      "bytes": 5831,
       "media_type": "application/json",
-      "count": 17
+      "count": 18
     }
   },
   "sources": [
@@ -185,6 +193,14 @@
       "url": "https://agentvegan.org/magasins",
       "license": null,
       "reuse_note": "Les marques, fiches et images restent soumises aux droits de leurs titulaires."
+    },
+    {
+      "id": "source:nutri-score",
+      "kind": "nutrition",
+      "label": "Santé publique France — Nutri-Score",
+      "url": "https://www.santepubliquefrance.fr/nutrition-et-activite-physique/nutri-score",
+      "license": null,
+      "reuse_note": "Nutri-Score est une marque de Santé publique France ; la lettre affichée conserve sa provenance et sa méthode."
     },
     {
       "id": "source:agentvegan-public-availability-variants",

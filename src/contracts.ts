@@ -107,8 +107,10 @@ export interface PlantProduct extends JsonObject {
   name: string;
   brand?: string | null;
   category_id?: string | null;
+  gtin?: string | null;
   image_url?: string | null;
   last_seen_at?: string | null;
+  nutrition?: JsonObject | null;
   offers: JsonObject[];
 }
 

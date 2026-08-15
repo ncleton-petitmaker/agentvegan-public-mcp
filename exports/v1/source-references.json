@@ -99,6 +99,14 @@
     "reuse_note": "Les marques, fiches et images restent soumises aux droits de leurs titulaires."
   },
   {
+    "id": "source:nutri-score",
+    "kind": "nutrition",
+    "label": "Santé publique France — Nutri-Score",
+    "url": "https://www.santepubliquefrance.fr/nutrition-et-activite-physique/nutri-score",
+    "license": null,
+    "reuse_note": "Nutri-Score est une marque de Santé publique France ; la lettre affichée conserve sa provenance et sa méthode."
+  },
+  {
     "id": "source:agentvegan-public-availability-variants",
     "kind": "substitution",
     "label": "AgentVegan — variantes culinaires publiques validées",

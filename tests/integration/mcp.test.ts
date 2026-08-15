@@ -70,7 +70,8 @@ describe("MCP officiel", () => {
       expect(detailEnvelope.data.recipe.step_count).toBe(steps.length);
 
       const products = await client.callTool({ name: "search_plant_products", arguments: { limit: 3 } });
-      const productEnvelope = products.structuredContent as { data: Array<{ id: string }> };
+      const productEnvelope = products.structuredContent as { data: Array<{ id: string; nutrition: { display_nutri_score: { grade: string } } }> };
+      expect(productEnvelope.data.every((product) => /^[a-e]$/u.test(product.nutrition.display_nutri_score.grade))).toBe(true);
       const productGallery = await client.callTool({ name: "explore_plant_products", arguments: { limit: 3 } });
       expect(productGallery).toMatchObject({ structuredContent: { data: { view: "plant_product_gallery", items: expect.any(Array) } } });
 
@@ -85,7 +86,10 @@ describe("MCP officiel", () => {
             kind: "commercial_product",
             score: expect.any(Number),
             score_label: "Score de preuve catalogue",
-            nutrition_status: "not_available",
+            nutrition_status: expect.stringMatching(/^(?:complete|partial|missing)$/u),
+            nutrition: expect.objectContaining({
+              display_nutri_score: expect.objectContaining({ grade: expect.stringMatching(/^[a-e]$/u) }),
+            }),
             score_criteria: expect.any(Array),
           })]),
         },
@@ -107,12 +111,14 @@ describe("MCP officiel", () => {
       const first = record.contents[0];
       expect(first && "text" in first ? JSON.parse(first.text) : null).toMatchObject({ data: { id: "iron_mg" } });
 
-      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v14.html" });
+      const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v15.html" });
       const uiContent = ui.contents[0];
       expect(uiContent).toMatchObject({ mimeType: "text/html;profile=mcp-app", _meta: { ui: { domain: "https://mcp.agentvegan.org" } } });
       expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Agent Vegan");
-      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Mode Yuka");
-      const substituteUi = await client.readResource({ uri: "ui://agentvegan/substitute-explorer/v14.html" });
+      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Détails");
+      expect(uiContent && "text" in uiContent ? uiContent.text : "").not.toContain("Mode Yuka");
+      expect(uiContent && "text" in uiContent ? uiContent.text : "").toContain("Ouvrir l’offre");
+      const substituteUi = await client.readResource({ uri: "ui://agentvegan/substitute-explorer/v15.html" });
       expect(substituteUi.contents[0]).toMatchObject({ mimeType: "text/html;profile=mcp-app" });
     } finally {
       await client.close();

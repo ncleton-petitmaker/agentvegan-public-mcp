@@ -18,11 +18,23 @@ describe("explorateur de substituts", () => {
       category_id: "poulet-vegetal",
       image_url: "https://example.test/product.png",
       last_seen_at: "2026-08-14T10:00:00.000Z",
+      nutrition: {
+        status: "complete",
+        basis: "100g",
+        values: { energy_kcal: 180, proteins_g: 18, salt_g: 1.1 },
+        display_nutri_score: { grade: "b", score: 2, version: "2023", provider: "AgentVegan", estimated: true, source_class: "agentvegan_estimate", origin: "agentvegan_official_algorithm_estimate", method: "estimated" },
+      },
       offers: [{ retailer_id: "retailer", availability: "in_stock", checked_at: "2026-08-14T10:00:00.000Z", vegan_proof: "mention_expresse", product_url: "https://example.test/product", price_cents: 399 }],
     } satisfies PlantProduct;
     const result = commercialSubstituteForUi(product, category!, "2026-08-14T17:00:00.000Z");
-    expect(result).toMatchObject({ score: 100, nutrition_status: "not_available" });
+    expect(result).toMatchObject({ score: 100, nutrition_status: "complete", nutrition: { display_nutri_score: { grade: "b" } } });
     expect(result.score_criteria).toHaveLength(5);
+  });
+
+  it("refuse un produit commercial sans Nutri-Score public traçable", () => {
+    const category = resolveSubstituteCategory("poulet");
+    const product = { id: "plant-incomplet", name: "Produit incomplet", offers: [] } satisfies PlantProduct;
+    expect(() => commercialSubstituteForUi(product, category!, "2026-08-14T17:00:00.000Z")).toThrow(/Nutri-Score public absent/u);
   });
 
   it("ne présente jamais la documentation culinaire comme une note nutritionnelle", () => {

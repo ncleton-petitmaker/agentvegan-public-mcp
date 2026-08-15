@@ -5,7 +5,7 @@ if (endpoint.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].inclu
   throw new Error("Le smoke test distant refuse un endpoint non HTTPS.");
 }
 
-const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.12" });
+const client = new Client({ name: "agentvegan-remote-smoke", version: "2.0.13" });
 const transport = new StreamableHTTPClientTransport(endpoint);
 await client.connect(transport);
 
@@ -41,10 +41,13 @@ try {
     throw new Error("Le cockpit distant contient une étape sans texte ou image publique.");
   }
 
-  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v14.html" });
+  const ui = await client.readResource({ uri: "ui://agentvegan/kitchen/v15.html" });
   const resource = ui.contents[0];
   if (!resource || resource.mimeType !== "text/html;profile=mcp-app" || !("text" in resource) || !resource.text.includes("Agent Vegan")) {
     throw new Error("La ressource UI distante est absente ou invalide.");
+  }
+  if (!resource.text.includes("Détails") || !resource.text.includes("Ouvrir l’offre") || !resource.text.includes("Nutri-Score") || resource.text.includes("Mode Yuka") || resource.text.includes("Voir l’offre datée")) {
+    throw new Error("Les libellés ou le Nutri-Score de l’interface distante ne correspondent pas à la version publiée.");
   }
 
   const identity = client.getServerVersion();
@@ -56,8 +59,8 @@ try {
   if (substitutes.isError || substitutes.structuredContent?.data?.view !== "substitute_gallery" || !Array.isArray(substituteItems) || substituteItems.length !== 6) {
     throw new Error("Le parcours distant « substitut au poulet » n’affiche pas sa galerie.");
   }
-  if (substituteItems.some((item) => item.kind !== "commercial_product" || !Number.isInteger(item.score) || !item.score_criteria?.length)) {
-    throw new Error("Le score ou le mode Yuka d’un substitut distant est incomplet.");
+  if (substituteItems.some((item) => item.kind !== "commercial_product" || !Number.isInteger(item.score) || !item.score_criteria?.length || !/^[a-e]$/u.test(item.nutrition?.display_nutri_score?.grade ?? ""))) {
+    throw new Error("Le score, le Nutri-Score ou les détails d’un substitut distant sont incomplets.");
   }
   process.stdout.write(`Production vérifiée : 15 outils, galerie de substituts scorés, Agent Vegan et ${steps.length} étapes illustrées sur ${endpoint.href}.\n`);
 } finally {

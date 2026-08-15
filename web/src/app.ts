@@ -31,6 +31,7 @@ const OPEN_LINK_ORIGINS = new Set([
   "https://doi.org",
   "https://extension.usu.edu",
   "https://fdc.nal.usda.gov",
+  "https://github.com",
   "https://lafourche.fr",
   "https://www.anses.fr",
   "https://www.efsa.europa.eu",
@@ -41,6 +42,7 @@ const OPEN_LINK_ORIGINS = new Set([
   "https://www.kingarthurbaking.com",
   "https://www.koro.fr",
   "https://www.matvaretabellen.no",
+  "https://www.santepubliquefrance.fr",
   "https://www.who.int",
 ]);
 const optionalString = z.string().nullable().optional();
@@ -51,9 +53,10 @@ const imageUrl = z.string().url().refine((value) => {
 const recipeImageUrl = z.string().url().refine((value) => {
   try { return new URL(value).origin === "https://agentvegan.org"; } catch { return false; }
 }, "L’image de recette doit provenir du domaine public AgentVegan");
-const safeLink = z.string().url().refine((value) => {
+const safeRequiredLink = z.string().url().refine((value) => {
   try { return new URL(value).protocol === "https:" && OPEN_LINK_ORIGINS.has(new URL(value).origin); } catch { return false; }
-}, "Lien externe non autorisé").nullable().optional();
+}, "Lien externe non autorisé");
+const safeLink = safeRequiredLink.nullable().optional();
 
 const NutrientScoreSchema = z.object({
   key: z.string(),
@@ -127,13 +130,63 @@ const OfferSchema = z.object({
   vegan_proof: optionalString,
 }).passthrough();
 
+const ProductNutriScoreSchema = z.object({
+  grade: z.enum(["a", "b", "c", "d", "e"]),
+  score: optionalNumber,
+  version: optionalString,
+  provider: optionalString,
+  estimated: z.boolean(),
+  source_class: optionalString,
+  origin: optionalString,
+  method: optionalString,
+}).passthrough();
+
+const ProductNutritionSchema = z.object({
+  status: z.enum(["complete", "partial", "missing"]),
+  basis: z.string(),
+  values: z.object({
+    energy_kcal: optionalNumber,
+    fat_g: optionalNumber,
+    saturated_fat_g: optionalNumber,
+    carbohydrates_g: optionalNumber,
+    sugars_g: optionalNumber,
+    fiber_g: optionalNumber,
+    proteins_g: optionalNumber,
+    salt_g: optionalNumber,
+  }).passthrough(),
+  display_nutri_score: ProductNutriScoreSchema,
+  declared_nutri_score: ProductNutriScoreSchema.extend({
+    source_url: safeLink,
+    checked_at: optionalString,
+    identity_basis: optionalString,
+    evidence: optionalString,
+  }).nullable().optional(),
+  calculated_nutri_score: ProductNutriScoreSchema.extend({
+    assumptions: z.array(z.string()).optional().default([]),
+    references: z.array(safeRequiredLink).optional().default([]),
+  }).nullable().optional(),
+  primary_source: z.object({
+    provider: optionalString,
+    source_url: safeLink,
+    checked_at: optionalString,
+    identity_basis: optionalString,
+  }).nullable().optional(),
+  score_resolution: z.object({
+    status: optionalString,
+    primary_source_class: optionalString,
+    reason: optionalString,
+  }).nullable().optional(),
+}).passthrough();
+
 const ProductCardSchema = z.object({
   id: z.string(),
   name: z.string(),
   brand: optionalString,
   category_id: optionalString,
+  gtin: optionalString,
   image_url: imageUrl,
   last_seen_at: optionalString,
+  nutrition: ProductNutritionSchema,
   offers: z.array(OfferSchema).default([]),
 }).passthrough();
 
@@ -222,9 +275,14 @@ const SubstituteItemSchema = z.object({
   culinary_rationale: optionalString,
   contexts: z.array(z.string()).optional().default([]),
   excluded_contexts: z.array(z.string()).optional().default([]),
-  nutrition_status: z.enum(["not_available", "not_compared"]),
+  nutrition: ProductNutritionSchema.optional(),
+  nutrition_status: z.enum(["complete", "partial", "missing", "not_compared"]),
   nutrition_message: z.string(),
-}).passthrough();
+}).passthrough().superRefine((item, context) => {
+  if (item.kind === "commercial_product" && !item.nutrition) {
+    context.addIssue({ code: "custom", path: ["nutrition"], message: "La nutrition du produit commercial est requise." });
+  }
+});
 
 const SubstituteGalleryDataSchema = z.object({
   view: z.literal("substitute_gallery"),
@@ -253,6 +311,7 @@ type RecipeCard = z.infer<typeof RecipeCardSchema>;
 type RecipeDetail = z.infer<typeof RecipeDetailSchema>;
 type RecipeGalleryItem = z.infer<typeof RecipeGalleryItemSchema>;
 type ProductCard = z.infer<typeof ProductCardSchema>;
+type ProductNutrition = z.infer<typeof ProductNutritionSchema>;
 type SubstituteItem = z.infer<typeof SubstituteItemSchema>;
 type ComparisonSeries = z.infer<typeof ComparisonSeriesSchema>;
 type Ingredient = z.infer<typeof IngredientSchema>;
@@ -280,7 +339,7 @@ if (!rootCandidate) throw new Error("Racine AgentVegan introuvable.");
 const root: HTMLElement = rootCandidate;
 
 const app = new App(
-  { name: "Agent Vegan", version: "2.0.12" },
+  { name: "Agent Vegan", version: "2.0.13" },
   { availableDisplayModes: ["inline", "fullscreen"] },
   { autoResize: true, strict: true },
 );
@@ -334,6 +393,82 @@ function formatNumber(value: number, maximumFractionDigits = 1): string {
 
 function normalizeLabel(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/gu, (letter) => letter.toUpperCase());
+}
+
+function nutriScoreOrigin(nutrition: ProductNutrition): string {
+  const score = nutrition.display_nutri_score;
+  if (score.source_class === "declared") return `Déclaré par ${score.provider ?? "la fiche produit"}`;
+  if (score.source_class === "exact_source_calculation") return `Calculé depuis la composition exacte${score.provider ? ` · ${score.provider}` : ""}`;
+  if (score.origin === "agentvegan_category_peer_estimate") return "Estimation AgentVegan fondée sur la catégorie";
+  return `Estimation calculée${score.provider ? ` · ${score.provider}` : ""}`;
+}
+
+function nutriScoreLogo(nutrition: ProductNutrition): HTMLElement {
+  const grade = nutrition.display_nutri_score.grade;
+  const wrapper = element("span", "nutri-score-badge");
+  wrapper.title = `${nutriScoreOrigin(nutrition)}. Ouvrez Détails pour la méthode et les valeurs.`;
+  const image = element("img");
+  image.src = `https://agentvegan.org/nutriscore/nutriscore-${grade}.svg`;
+  image.alt = `Nutri-Score ${grade.toUpperCase()}`;
+  image.loading = "eager";
+  image.decoding = "async";
+  image.width = 240;
+  image.height = 130;
+  wrapper.append(image);
+  return wrapper;
+}
+
+const PRODUCT_NUTRIENTS: ReadonlyArray<{ key: keyof ProductNutrition["values"]; label: string; unit: string; digits?: number }> = [
+  { key: "energy_kcal", label: "Énergie", unit: "kcal", digits: 0 },
+  { key: "proteins_g", label: "Protéines", unit: "g" },
+  { key: "carbohydrates_g", label: "Glucides", unit: "g" },
+  { key: "sugars_g", label: "Sucres", unit: "g" },
+  { key: "fat_g", label: "Lipides", unit: "g" },
+  { key: "saturated_fat_g", label: "Saturés", unit: "g" },
+  { key: "fiber_g", label: "Fibres", unit: "g" },
+  { key: "salt_g", label: "Sel", unit: "g" },
+];
+
+function productNutritionDetails(nutrition: ProductNutrition): HTMLElement {
+  const section = element("section", "product-nutrition-details");
+  const header = element("div", "product-nutrition-header");
+  header.append(nutriScoreLogo(nutrition));
+  const copy = element("div");
+  copy.append(
+    element("strong", "", `Nutri-Score ${nutrition.display_nutri_score.grade.toUpperCase()}`),
+    element("p", "meta", nutriScoreOrigin(nutrition)),
+  );
+  header.append(copy);
+  section.append(header);
+
+  const values = element("dl", "product-nutrition-grid");
+  for (const nutrient of PRODUCT_NUTRIENTS) {
+    const value = nutrition.values[nutrient.key];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    const cell = element("div", "product-nutrition-value");
+    cell.append(
+      element("dt", "", nutrient.label),
+      element("dd", "", `${formatNumber(value, nutrient.digits ?? 1)} ${nutrient.unit}`),
+    );
+    values.append(cell);
+  }
+  if (values.childElementCount) {
+    section.append(element("p", "nutrition-basis", "Valeurs pour 100 g"), values);
+  } else {
+    section.append(element("p", "meta", "Les valeurs chiffrées ne sont pas publiées pour ce produit."));
+  }
+
+  const source = nutrition.primary_source;
+  if (source?.provider) {
+    section.append(element("p", "nutrition-source", `Composition : ${source.provider}${source.checked_at ? ` · vérifiée le ${formatDate(source.checked_at)}` : ""}.`));
+  }
+  const assumptions = nutrition.calculated_nutri_score?.assumptions ?? [];
+  if (nutrition.display_nutri_score.source_class === "agentvegan_estimate" && assumptions.length) {
+    const assumptionsList = element("ul", "nutrition-assumptions");
+    for (const assumption of assumptions) assumptionsList.append(element("li", "", assumption));
+    section.append(element("strong", "", "Hypothèses de calcul"), assumptionsList);
+  }
+  return section;
 }
 
 function imageMedia(url: string | null | undefined, alt: string, loading: "lazy" | "eager" = "lazy"): HTMLElement {
@@ -840,6 +975,7 @@ function productCard(product: ProductCard): HTMLElement {
   const body = element("div", "card-body");
   body.append(element("h3", "", product.name));
   if (product.brand) body.append(element("p", "meta", product.brand));
+  body.append(nutriScoreLogo(product.nutrition));
   const bestOffer = product.offers.find((offer) => offer.availability === "in_stock") ?? product.offers[0];
   if (bestOffer) {
     const availability = availabilityLabel(bestOffer.availability);
@@ -850,7 +986,7 @@ function productCard(product: ProductCard): HTMLElement {
     if (bestOffer.price_cents !== null && bestOffer.price_cents !== undefined) {
       body.append(element("p", "", `${formatNumber(bestOffer.price_cents / 100, 2)} €${bestOffer.unit_price ? ` · ${bestOffer.unit_price}` : ""}`));
     }
-    if (bestOffer.product_url) body.append(button("Voir l’offre datée", async () => {
+    if (bestOffer.product_url) body.append(button("Ouvrir l’offre", async () => {
       try { await openExternal(bestOffer.product_url); } catch (error) { showError(error instanceof Error ? error.message : "Lien impossible à ouvrir."); }
     }));
   } else {
@@ -914,15 +1050,15 @@ function scoreMedallion(item: SubstituteItem): HTMLElement {
   return medallion;
 }
 
-function yukaMode(item: SubstituteItem): HTMLElement {
-  const wrapper = element("div", "yuka-mode");
-  const toggle = button("Mode Yuka", () => {
+function detailsToggle(item: SubstituteItem): HTMLElement {
+  const wrapper = element("div", "details-mode");
+  const toggle = button("Détails", () => {
     const willOpen = panel.hidden;
     panel.hidden = !willOpen;
-    toggle.textContent = willOpen ? "Fermer le mode Yuka" : "Mode Yuka";
+    toggle.textContent = willOpen ? "Masquer les détails" : "Détails";
     toggle.setAttribute("aria-expanded", String(willOpen));
-  }, "yuka-toggle");
-  const panel = element("div", "yuka-panel");
+  }, "details-toggle");
+  const panel = element("div", "details-panel");
   panel.hidden = true;
   panel.id = `score-${item.id}`;
   toggle.setAttribute("aria-controls", panel.id);
@@ -947,9 +1083,13 @@ function yukaMode(item: SubstituteItem): HTMLElement {
   }
   panel.append(criteria);
 
-  const nutrition = element("div", "nutrition-coverage");
-  nutrition.append(element("strong", "", "Nutrition"), element("p", "meta", item.nutrition_message));
-  panel.append(nutrition);
+  if (item.kind === "commercial_product" && item.nutrition) {
+    panel.append(productNutritionDetails(item.nutrition));
+  } else {
+    const nutrition = element("div", "nutrition-coverage");
+    nutrition.append(element("strong", "", "Nutrition"), element("p", "meta", item.nutrition_message));
+    panel.append(nutrition);
+  }
   wrapper.append(toggle, panel);
   return wrapper;
 }
@@ -965,7 +1105,10 @@ function substituteCard(item: SubstituteItem): HTMLElement {
     element("h3", "", item.name),
   );
   if (item.brand) title.append(element("p", "meta", item.brand));
-  top.append(title, scoreMedallion(item));
+  const scores = element("div", "substitute-scores");
+  scores.append(scoreMedallion(item));
+  if (item.kind === "commercial_product" && item.nutrition) scores.append(nutriScoreLogo(item.nutrition));
+  top.append(title, scores);
   body.append(top);
 
   if (item.kind === "culinary_rule") {
@@ -987,12 +1130,12 @@ function substituteCard(item: SubstituteItem): HTMLElement {
       if (bestOffer.price_cents !== null && bestOffer.price_cents !== undefined) {
         body.append(element("p", "price", `${formatNumber(bestOffer.price_cents / 100, 2)} €${bestOffer.unit_price ? ` · ${bestOffer.unit_price}` : ""}`));
       }
-      if (bestOffer.product_url) body.append(button("Voir l’offre datée", async () => {
+      if (bestOffer.product_url) body.append(button("Ouvrir l’offre", async () => {
         try { await openExternal(bestOffer.product_url); } catch (error) { showError(error instanceof Error ? error.message : "Lien impossible à ouvrir."); }
       }));
     }
   }
-  body.append(yukaMode(item));
+  body.append(detailsToggle(item));
   card.append(body);
   return card;
 }

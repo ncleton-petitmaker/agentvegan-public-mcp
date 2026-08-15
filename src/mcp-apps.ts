@@ -4,11 +4,11 @@ import type { JsonObject, JsonValue, PublicResponse } from "./contracts.js";
 import { MCP_APP_HTML } from "./generated/mcp-app-html.js";
 
 export const MCP_APP_URIS = {
-  kitchen: "ui://agentvegan/kitchen/v14.html",
-  plantProductGallery: "ui://agentvegan/plant-product-gallery/v14.html",
-  nutritionComparison: "ui://agentvegan/nutrition-comparison/v14.html",
-  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v14.html",
-  substituteExplorer: "ui://agentvegan/substitute-explorer/v14.html",
+  kitchen: "ui://agentvegan/kitchen/v15.html",
+  plantProductGallery: "ui://agentvegan/plant-product-gallery/v15.html",
+  nutritionComparison: "ui://agentvegan/nutrition-comparison/v15.html",
+  ingredientExplorer: "ui://agentvegan/ingredient-explorer/v15.html",
+  substituteExplorer: "ui://agentvegan/substitute-explorer/v15.html",
 } as const;
 
 export const MCP_APP_IMAGE_ORIGINS = [
@@ -139,13 +139,20 @@ export function productCardForUi(value: unknown): JsonObject {
   if (!product || typeof product.id !== "string" || typeof product.name !== "string") {
     throw new Error("Un produit ne respecte pas le contrat requis par l’interface MCP Apps.");
   }
+  const nutrition = record(product.nutrition) as JsonObject | null;
+  const displayNutriScore = record(nutrition?.display_nutri_score);
+  if (!nutrition || typeof displayNutriScore?.grade !== "string" || !/^[a-e]$/u.test(displayNutriScore.grade)) {
+    throw new Error(`Le Nutri-Score public du produit ${product.id} est absent ou invalide.`);
+  }
   return {
     id: product.id,
     name: product.name,
     brand: stringOrNull(product.brand),
     category_id: stringOrNull(product.category_id),
+    gtin: stringOrNull(product.gtin),
     image_url: absoluteAgentVeganImage(product.image_url),
     last_seen_at: stringOrNull(product.last_seen_at),
+    nutrition,
     offers: array(product.offers) as JsonValue[],
   };
 }

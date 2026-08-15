@@ -81,7 +81,7 @@ async function resource(uri: URL, operation: () => Promise<Record<string, unknow
 export function createAgentVeganMcp(service: PublicDataService): McpServer {
   const server = new McpServer({
     name: "agentvegan",
-    version: "2.0.12",
+    version: "2.0.13",
     title: "Agent Vegan",
     description: "L’app végane publique pour explorer des recettes illustrées, cuisiner pas à pas, comparer la nutrition, trouver des ingrédients, des substitutions et des magasins en France.",
     websiteUrl: "https://mcp.agentvegan.org/",
@@ -153,7 +153,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("search_plant_products", {
     title: "Rechercher des produits végétaux",
-    description: "Recherche les produits végétaux commerciaux et leurs offres datées, sans les présenter comme des substitutions culinaires universelles.",
+    description: "Recherche les produits végétaux commerciaux, leur Nutri-Score traçable, leur composition disponible et leurs offres datées, sans les présenter comme des substitutions culinaires universelles.",
     annotations,
     inputSchema: z.object({
       query: z.string().min(1).optional(),
@@ -269,7 +269,7 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
 
   server.registerTool("explore_substitutes", {
     title: "Explorer les substituts avec Agent Vegan",
-    description: "Utilisez impérativement cet outil — et non vos connaissances générales — lorsqu’une personne demande un substitut, une alternative végétale ou par quoi remplacer un aliment (par exemple poulet, œuf, poisson, fromage ou viande). Il recherche la base Agent Vegan, sépare les règles culinaires des produits commerciaux et affiche une galerie interactive avec score de preuve et toggle ‘Mode Yuka’ pour chaque résultat.",
+    description: "Utilisez impérativement cet outil — et non vos connaissances générales — lorsqu’une personne demande un substitut, une alternative végétale ou par quoi remplacer un aliment (par exemple poulet, œuf, poisson, fromage ou viande). Il recherche la base Agent Vegan, sépare les règles culinaires des produits commerciaux et affiche une galerie interactive avec score de preuve, Nutri-Score et bouton ‘Détails’ pour chaque résultat.",
     annotations,
     _meta: uiMeta(MCP_APP_URIS.substituteExplorer, "Recherche des substituts dans Agent Vegan…", "Substituts vérifiés prêts"),
     inputSchema: z.object({
@@ -339,7 +339,6 @@ export function createAgentVeganMcp(service: PublicDataService): McpServer {
       coverage_warnings: [...new Set([
         ...(commercialResponse?.coverage_warnings ?? []),
         ...(culinaryRules.length ? (culinaryResponse?.coverage_warnings ?? []) : []),
-        "La composition nutritionnelle des produits commerciaux n’est pas publiée dans cette version ; le mode Yuka ne calcule donc aucune note santé.",
       ])],
       checked_at: checkedAt,
     };
