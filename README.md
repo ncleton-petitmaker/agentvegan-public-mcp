@@ -82,6 +82,8 @@ Le transport distant est Streamable HTTP et le serveur utilise le SDK MCP TypeSc
 
 Le déploiement refuse le placeholder D1 et nécessite une session Wrangler authentifiée.
 
+La phase initiale utilise explicitement Workers Free : 100 000 requêtes par jour et la limite Cloudflare de 10 ms CPU par invocation. D1, les caches, la limitation anti-abus et toutes les validations restent actifs. Les erreurs CPU, les `429`, la latence et les volumes doivent être observés ; une saturation ou des dépassements CPU déclenchent le passage à Workers Paid, sans masquer les erreurs ni réduire le contrat de données.
+
 ## Confidentialité, limites et contact
 
 - Politique : `https://mcp.agentvegan.org/privacy`

@@ -89,7 +89,7 @@ export function createApp(): Hono<{ Bindings: Env }> {
     const handler = createMcpHandler(() => createAgentVeganMcp(service(c.env)), {
       route: "/mcp",
       corsOptions: { origin: "*", methods: "GET, POST, DELETE, OPTIONS", headers: "Content-Type, Mcp-Session-Id, MCP-Protocol-Version" },
-      allowedHostnames: ["mcp.agentvegan.org", "localhost", "127.0.0.1", "[::1]"],
+      allowedHostnames: ["mcp.agentvegan.org", "agentvegan-public-mcp.nicolas-cleton.workers.dev", "localhost", "127.0.0.1", "[::1]"],
       allowedOriginHostnames: ["chatgpt.com", "chat.openai.com", "platform.openai.com", "claude.ai", "localhost", "127.0.0.1", "[::1]"],
       legacy: "stateless",
       responseMode: "auto",

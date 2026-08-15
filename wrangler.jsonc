@@ -45,8 +45,5 @@
       "head_sampling_rate": 1,
       "persist": true
     }
-  },
-  "limits": {
-    "cpu_ms": 1000
   }
 }
