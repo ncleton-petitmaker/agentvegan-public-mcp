@@ -5,7 +5,7 @@
   "description": "Recettes véganes, ingrédients, nutrition, substitutions, enseignes et produits publics",
   "version": "1.1.0",
   "repository": {
-    "url": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
+    "url": "https://github.com/ncleton/agentvegan-public-mcp",
     "source": "github"
   },
   "remotes": [

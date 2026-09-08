@@ -8,7 +8,7 @@
     "url": "https://agentvegan.org/"
   },
   "homepage": "https://mcp.agentvegan.org/",
-  "repository": "https://github.com/ncleton-petitmaker/agentvegan-public-mcp",
+  "repository": "https://github.com/ncleton/agentvegan-public-mcp",
   "license": "MIT",
   "keywords": ["vegan", "recettes", "nutrition", "substitutions", "france"],
   "skills": "./skills/",
